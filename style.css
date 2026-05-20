@@ -183,6 +183,14 @@ h1 {
   opacity: 1;
 }
 
+.editar {
+  background: #ff9800;
+}
+
+.editar:hover {
+  background: #f57c00;
+}
+
 /* RESPONSIVO */
 @media (max-width: 600px) {
 

@@ -13,6 +13,8 @@ valorInput.addEventListener("input", formatarMoeda);
 ========================= */
 let boletos = JSON.parse(localStorage.getItem("boletos")) || [];
 
+let editandoIndex = null;
+
 /* =========================
    MOSTRAR BOLETOS
 ========================= */
@@ -107,6 +109,13 @@ function renderizarBoletos() {
         </button>
 
         <button
+          class="editar"
+          onclick="editarBoleto(${index})"
+        >
+          Editar
+        </button>
+
+        <button
           class="excluir"
           onclick="excluirBoleto(${index})"
         >
@@ -155,7 +164,24 @@ function salvarBoleto() {
     pago: false
   };
 
-  boletos.push(novoBoleto);
+  if (editandoIndex !== null) {
+
+    boletos[editandoIndex] = {
+      ...novoBoleto,
+      pago: boletos[editandoIndex].pago
+    };
+
+    editandoIndex = null;
+
+    mostrarToast("Boleto atualizado com sucesso!", "sucesso");
+
+  } else {
+
+    boletos.push(novoBoleto);
+
+    mostrarToast("Boleto salvo com sucesso!", "sucesso");
+
+  }
 
   localStorage.setItem("boletos", JSON.stringify(boletos));
 
@@ -163,8 +189,6 @@ function salvarBoleto() {
 
   renderizarBoletos();
   verificarVencimentos();
-
-  mostrarToast("Boleto salvo com sucesso!", "sucesso");
 }
 
 /* =========================
@@ -334,6 +358,25 @@ function mostrarToast(mensagem, tipo = "info") {
   setTimeout(() => {
     toast.classList.remove("show");
   }, 2500);
+
+}
+
+function editarBoleto(index) {
+
+  const boleto = boletos[index];
+
+  nomeInput.value = boleto.nome;
+
+  // converte para máscara novamente
+  valorInput.value = Number(boleto.valor)
+    .toFixed(2)
+    .replace(".", ",");
+
+  vencimentoInput.value = boleto.vencimento;
+
+  editandoIndex = index;
+
+  mostrarToast("Editando boleto...", "info");
 
 }
 
