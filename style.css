@@ -191,6 +191,27 @@ h1 {
   background: #f57c00;
 }
 
+.filtros {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.filtros button {
+  background: #333;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 8px;
+  color: #fff;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.filtros button:hover {
+  background: #555;
+}
+
 /* RESPONSIVO */
 @media (max-width: 600px) {
 

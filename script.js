@@ -5,6 +5,8 @@ const vencimentoInput = document.getElementById("vencimento");
 const botaoSalvar = document.getElementById("salvar");
 const lista = document.getElementById("lista");
 
+let filtroAtual = "todos";
+
 // EVENTO MÁSCARA MOEDA
 valorInput.addEventListener("input", formatarMoeda);
 
@@ -57,27 +59,53 @@ function renderizarBoletos() {
 
   const hojeFormatado = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-${String(hoje.getDate()).padStart(2, '0')}`;
 
-  boletos.forEach((boleto, index) => {
+  boletos
+    .filter((boleto) => {
 
-    const div = document.createElement("div");
-    div.classList.add("boleto");
+      const hoje = new Date();
 
-    // STATUS VISUAL (cores do card)
-    if (boleto.pago) {
-      div.classList.add("pago");
-    } else {
+      const hojeFormatado = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-${String(hoje.getDate()).padStart(2, '0')}`;
 
-      if (boleto.vencimento < hojeFormatado) {
-        div.classList.add("atrasado");
+      if (filtroAtual === "todos") {
+        return true;
       }
 
-      if (boleto.vencimento === hojeFormatado) {
-        div.classList.add("hoje");
+      if (filtroAtual === "pagos") {
+        return boleto.pago;
       }
 
-    }
+      if (filtroAtual === "atrasados") {
+        return !boleto.pago && boleto.vencimento < hojeFormatado;
+      }
 
-    div.innerHTML = `
+      if (filtroAtual === "hoje") {
+        return !boleto.pago && boleto.vencimento === hojeFormatado;
+      }
+
+      if (filtroAtual === "pendentes") {
+        return !boleto.pago && boleto.vencimento > hojeFormatado;
+      }
+
+    }).forEach((boleto, index) => {
+
+      const div = document.createElement("div");
+      div.classList.add("boleto");
+
+      // STATUS VISUAL (cores do card)
+      if (boleto.pago) {
+        div.classList.add("pago");
+      } else {
+
+        if (boleto.vencimento < hojeFormatado) {
+          div.classList.add("atrasado");
+        }
+
+        if (boleto.vencimento === hojeFormatado) {
+          div.classList.add("hoje");
+        }
+      }
+
+      div.innerHTML = `
       <div class="info">
         <h3>
           ${boleto.pago ? "✅" : "📄"} ${boleto.nome}
@@ -93,9 +121,9 @@ function renderizarBoletos() {
 
        <strong>
   ${boleto.pago
-        ? "✅ Pago"
-        : calcularDiasRestantes(boleto.vencimento)
-      }
+          ? "✅ Pago"
+          : calcularDiasRestantes(boleto.vencimento)
+        }
 </strong>
       </div>
 
@@ -125,9 +153,9 @@ function renderizarBoletos() {
       </div>
     `;
 
-    lista.appendChild(div);
+      lista.appendChild(div);
 
-  });
+    });
 
 }
 /* =========================
@@ -189,6 +217,18 @@ function salvarBoleto() {
 
   renderizarBoletos();
   verificarVencimentos();
+}
+
+/* =========================
+   FILTRAR BOLETOS
+========================= */
+
+function filtrarBoletos(filtro) {
+
+  filtroAtual = filtro;
+
+  renderizarBoletos();
+
 }
 
 /* =========================
