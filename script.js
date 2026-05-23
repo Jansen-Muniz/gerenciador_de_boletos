@@ -13,7 +13,7 @@ valorInput.addEventListener("input", formatarMoeda);
 /* =========================
    PEGAR BOLETOS SALVOS
 ========================= */
-let boletos = JSON.parse(localStorage.getItem("boletos")) || [];
+let boletos = [];
 
 let editandoIndex = null;
 
@@ -131,7 +131,7 @@ function renderizarBoletos() {
 
         <button
           class="pago"
-          onclick="marcarComoPago(${index})"
+          onclick="marcarComoPago(${boleto.id})"
         >
           ${boleto.pago ? "Desfazer" : "Pago"}
         </button>
@@ -145,7 +145,7 @@ function renderizarBoletos() {
 
         <button
           class="excluir"
-          onclick="excluirBoleto(${index})"
+          onclick="excluirBoleto(${boleto.id})"
         >
           Excluir
         </button>
@@ -161,7 +161,7 @@ function renderizarBoletos() {
 /* =========================
    SALVAR BOLETO
 ========================= */
-function salvarBoleto() {
+async function salvarBoleto() {
 
   const nome = nomeInput.value;
   const valor = valorInput.value
@@ -205,13 +205,22 @@ function salvarBoleto() {
 
   } else {
 
-    boletos.push(novoBoleto);
+    await fetch("http://localhost:3000/boletos", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(novoBoleto)
+    });
 
-    mostrarToast("Boleto salvo com sucesso!", "sucesso");
+    await carregarBoletos();
 
+    mostrarToast("Boleto atualizado com sucesso!", "sucesso");
   }
 
-  localStorage.setItem("boletos", JSON.stringify(boletos));
+  await carregarBoletos();
+
+  mostrarToast("Boleto salvo com sucesso!", "sucesso");
 
   limparCampos();
 
@@ -234,25 +243,67 @@ function filtrarBoletos(filtro) {
 /* =========================
    EXCLUIR BOLETO
 ========================= */
-function excluirBoleto(index) {
+async function excluirBoleto(id) {
 
-  boletos.splice(index, 1);
+  try {
 
-  localStorage.setItem("boletos", JSON.stringify(boletos));
+    await fetch(`http://localhost:3000/boletos/${id}`, {
+      method: "DELETE"
+    });
 
-  renderizarBoletos();
-  verificarVencimentos();
+    mostrarToast(
+      "Boleto excluído 😄",
+      "sucesso"
+    );
+
+    await carregarBoletos();
+
+    mostrarToast("Boleto excluído 😄", "sucesso");
+
+  } catch (erro) {
+
+    console.error(erro);
+
+    mostrarToast(
+      "Erro ao excluir boleto",
+      "erro"
+    );
+
+  }
+
 }
 
-function marcarComoPago(index) {
+async function marcarComoPago(id) {
 
-  boletos[index].pago = !boletos[index].pago;
+  try {
 
-  localStorage.setItem("boletos", JSON.stringify(boletos));
+    await fetch(`http://localhost:3000/boletos/${id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        pago: true
+      })
+    });
 
-  renderizarBoletos();
+    await carregarBoletos();
 
-  verificarVencimentos();
+    mostrarToast(
+      "Boleto marcado como pago 😄",
+      "sucesso"
+    );
+
+  } catch (erro) {
+
+    console.error(erro);
+
+    mostrarToast(
+      "Erro ao atualizar boleto",
+      "erro"
+    );
+
+  }
 
 }
 
@@ -378,13 +429,17 @@ function verificarVencimentos() {
 
 }
 
+let toastTimeout;
+
 function mostrarToast(mensagem, tipo = "info") {
 
   const toast = document.getElementById("toast");
 
+  // limpa timeout anterior
+  clearTimeout(toastTimeout);
+
   toast.innerText = mensagem;
 
-  // cores mais modernas e diferentes do alerta
   if (tipo === "erro") {
     toast.style.background = "#d32f2f";
   } else if (tipo === "sucesso") {
@@ -395,9 +450,11 @@ function mostrarToast(mensagem, tipo = "info") {
 
   toast.classList.add("show");
 
-  setTimeout(() => {
+  toastTimeout = setTimeout(() => {
+
     toast.classList.remove("show");
-  }, 2500);
+
+  }, 4000);
 
 }
 
@@ -420,6 +477,26 @@ function editarBoleto(index) {
 
 }
 
+async function carregarBoletos() {
+
+  try {
+
+    const resposta = await fetch("http://localhost:3000/boletos");
+
+    boletos = await resposta.json();
+
+    renderizarBoletos();
+
+    verificarVencimentos();
+
+  } catch (erro) {
+
+    console.error("Erro ao carregar boletos:", erro);
+
+  }
+
+}
+
 /* =========================
    EVENTO BOTÃO
 ========================= */
@@ -428,5 +505,4 @@ botaoSalvar.addEventListener("click", salvarBoleto);
 /* =========================
    INICIAR
 ========================= */
-renderizarBoletos();
-verificarVencimentos();
+carregarBoletos();

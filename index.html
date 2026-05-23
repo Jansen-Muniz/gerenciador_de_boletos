@@ -16,7 +16,7 @@
     <h1>Gerenciador de Boletos</h1>
 
     <!-- FORMULÁRIO -->
-    <div class="formulario">
+    <form class="formulario" autocomplete="off">
 
       <div class="campo">
         <label for="nome">Nome do boleto</label>
@@ -33,11 +33,11 @@
         <input type="date" id="vencimento">
       </div>
 
-      <button id="salvar">
+      <button type="button" id="salvar">
         Salvar boleto
       </button>
 
-    </div>
+    </form>
 
     <!-- ALERTA -->
     <div class="alerta" id="alerta">
@@ -97,8 +97,8 @@
 
   </div>
 
-  <script src="script.js"></script>
   <div id="toast"></div>
+  <script src="script.js"></script>
 </body>
 
 </html>
