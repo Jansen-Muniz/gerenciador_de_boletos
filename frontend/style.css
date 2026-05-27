@@ -212,6 +212,19 @@ h1 {
   background: #555;
 }
 
+.btn-logout {
+  background: #d32f2f;
+  color: white;
+  padding: 10px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-logout:hover {
+  background: #ff0000;
+}
+
 /* RESPONSIVO */
 @media (max-width: 600px) {
 

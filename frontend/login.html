@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Login - Boletos</title>
+  <link rel="stylesheet" href="login.css">
+</head>
+
+<body>
+
+  <!-- Adicionamos o onsubmit para controlar o envio pelo JavaScript -->
+  <form class="login-container" onsubmit="login(event)">
+
+    <h2>🔐 Acesso ao Gerenciador de Boletos</h2>
+
+    <input id="usuario" type="text" placeholder="Usuário" autocomplete="off" required>
+
+    <input id="senha" type="password" placeholder="Senha" autocomplete="off" required>
+
+    <!-- Removemos o onclick daqui e mudamos o tipo para submit -->
+    <button type="submit">Entrar</button>
+
+    <p id="erro"></p>
+
+  </form>
+
+  <script src="login.js"></script>
+
+</body>
+
+</html>
