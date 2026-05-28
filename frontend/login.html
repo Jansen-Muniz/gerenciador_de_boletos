@@ -9,23 +9,34 @@
 
 <body>
 
-  <!-- Adicionamos o onsubmit para controlar o envio pelo JavaScript -->
-  <form class="login-container" onsubmit="login(event)">
+  <body>
 
-    <h2>🔐 Acesso ao Gerenciador de Boletos</h2>
+    <!-- FORMULÁRIO DE LOGIN -->
+    <form id="form-login" class="login-container" onsubmit="login(event)">
+      <h2>🔐 Acesso ao Gerenciador de Boletos</h2>
 
-    <input id="usuario" type="text" placeholder="Usuário" autocomplete="off" required>
+      <input id="usuario" type="text" placeholder="Usuário" autocomplete="off" required>
+      <input id="senha" type="password" placeholder="Senha" autocomplete="off" required>
 
-    <input id="senha" type="password" placeholder="Senha" autocomplete="off" required>
+      <button type="submit">Entrar</button>
 
-    <!-- Removemos o onclick daqui e mudamos o tipo para submit -->
-    <button type="submit">Entrar</button>
+      <p id="erro" class="msg-erro"></p>
+      <p class="trocar-tela">Não tem conta? <a href="#" onclick="alternarTelas()">Cadastre-se aqui</a></p>
+    </form>
 
-    <p id="erro"></p>
+    <!-- FORMULÁRIO DE CADASTRO (Inicia escondido) -->
+    <form id="form-cadastro" class="login-container" onsubmit="cadastrar(event)" style="display: none;">
+      <h2>📝 Criar Nova Conta</h2>
+      <input id="cad-usuario" type="text" placeholder="Escolha um Usuário" autocomplete="off" required>
+      <input id="cad-senha" type="password" placeholder="Escolha uma Senha" autocomplete="off" required>
+      <button type="submit" style="background: #2e7d32;">Cadastrar</button>
+      <p id="cad-msg" class="msg-erro"></p>
+      <p class="trocar-tela">Já tem conta? <a href="#" onclick="alternarTelas()">Voltar para o Login</a></p>
+    </form>
 
-  </form>
+    <script src="login.js"></script>
+  </body>
 
-  <script src="login.js"></script>
 
 </body>
 

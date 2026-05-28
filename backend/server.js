@@ -112,37 +112,70 @@ app.post("/login", (req, res) => {
 
 });
 
+app.post("/usuarios", (req, res) => {
+  const { usuario, senha } = req.body;
+
+  if (!usuario || !senha || usuario.trim() === "" || senha.trim() === "") {
+    return res.status(400).json({ erro: "Preencha todos os campos corretamente." });
+  }
+
+  // 1. Verifica se o usuário já existe
+  db.get("SELECT * FROM usuarios WHERE usuario = ?", [usuario], (err, user) => {
+    if (err) {
+      return res.status(500).json({ erro: err.message });
+    }
+
+    if (user) {
+      return res.status(400).json({ erro: "Este nome de usuário já está em uso." });
+    }
+
+    // 2. Criptografa a senha
+    const senhaHash = bcrypt.hashSync(senha, 10);
+
+    // 3. Insere no banco (Corrigido aqui!)
+    db.run(
+      "INSERT INTO usuarios (usuario, senha) VALUES (?, ?)",
+      [usuario, senhaHash],
+      function (erroCadastro) {
+        if (erroCadastro) {
+          return res.status(500).json({ erro: erroCadastro.message });
+        }
+
+        return res.status(201).json({ mensagem: "Usuário criado com sucesso!" });
+      }
+    );
+  });
+});
+
 app.get("/boletos", verificarLogin, (req, res) => {
+  const usuarioLogado = req.session.usuario; // 👈 Identifica quem está logado
 
-  db.all("SELECT * FROM boletos", [], (erro, rows) => {
-
+  // 👇 Busca APENAS os boletos do usuário da sessão
+  db.all("SELECT * FROM boletos WHERE usuario = ?", [usuarioLogado], (erro, rows) => {
     if (erro) {
       return res.status(500).json({
         erro: erro.message
       });
     }
-
     res.json(rows);
-
   });
-
 });
 
 app.post("/boletos", verificarLogin, (req, res) => {
-
   const { nome, valor, vencimento, pago } = req.body;
+  const usuarioLogado = req.session.usuario; // 👈 Pega o nome do dono do boleto
 
+  // 👇 Incluímos o campo 'usuario' no comando SQL
   const sql = `
     INSERT INTO boletos
-    (nome, valor, vencimento, pago)
-    VALUES (?, ?, ?, ?)
+    (nome, valor, vencimento, pago, usuario)
+    VALUES (?, ?, ?, ?, ?)
   `;
 
   db.run(
     sql,
-    [nome, valor, vencimento, pago ? 1 : 0],
+    [nome, valor, vencimento, pago ? 1 : 0, usuarioLogado], // 👈 Grava o usuário correspondente
     function (erro) {
-
       if (erro) {
         return res.status(500).json({
           erro: erro.message
@@ -156,33 +189,31 @@ app.post("/boletos", verificarLogin, (req, res) => {
         vencimento,
         pago
       });
-
     }
   );
-
 });
 
 app.put("/boletos/:id", verificarLogin, (req, res) => {
-
   const { id } = req.params;
-
   const { nome, valor, vencimento, pago } = req.body;
+  const usuarioLogado = req.session.usuario; // 👈 Segurança extra
 
+  // 👇 Atualiza o boleto apenas se ele pertencer ao usuário logado (evita que um altere o do outro via ID)
   db.run(
     `
     UPDATE boletos
     SET nome = ?, valor = ?, vencimento = ?, pago = ?
-    WHERE id = ?
+    WHERE id = ? AND usuario = ?
     `,
     [
       nome,
       valor,
       vencimento,
       pago ? 1 : 0,
-      id
+      id,
+      usuarioLogado
     ],
     function (erro) {
-
       if (erro) {
         return res.status(500).json({
           erro: erro.message
@@ -192,21 +223,19 @@ app.put("/boletos/:id", verificarLogin, (req, res) => {
       res.json({
         mensagem: "Atualizado com sucesso 😄"
       });
-
     }
   );
-
 });
 
 app.delete("/boletos/:id", verificarLogin, (req, res) => {
-
   const { id } = req.params;
+  const usuarioLogado = req.session.usuario; // 👈 Segurança extra
 
+  // 👇 Deleta o boleto apenas se ele pertencer ao usuário logado
   db.run(
-    "DELETE FROM boletos WHERE id = ?",
-    [id],
+    "DELETE FROM boletos WHERE id = ? AND usuario = ?",
+    [id, usuarioLogado],
     function (erro) {
-
       if (erro) {
         return res.status(500).json({
           erro: erro.message
@@ -216,11 +245,10 @@ app.delete("/boletos/:id", verificarLogin, (req, res) => {
       res.json({
         mensagem: "Boleto excluído 😄"
       });
-
     }
   );
-
 });
+
 
 app.post("/logout", (req, res) => {
   if (req.session) {

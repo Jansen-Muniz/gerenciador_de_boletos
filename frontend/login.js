@@ -1,5 +1,9 @@
 async function login(e) {
-  if (e) e.preventDefault();
+  if (e) {
+    e.preventDefault();
+  } else if (window.event) {
+    window.event.preventDefault();
+  }
 
   const usuario = document.getElementById("usuario").value;
   const senha = document.getElementById("senha").value;
@@ -47,4 +51,67 @@ async function login(e) {
 
   }
 
+}
+
+// Função para alternar a exibição entre Login e Cadastro
+function alternarTelas() {
+  const formLogin = document.getElementById("form-login");
+  const formCadastro = document.getElementById("form-cadastro");
+  const erro = document.getElementById("erro");
+  const cadMsg = document.getElementById("cad-msg");
+
+  // Limpa mensagens antigas
+  erro.innerText = "";
+  cadMsg.innerText = "";
+
+  if (formLogin.style.display === "none") {
+    formLogin.style.display = "block";
+    formCadastro.style.display = "none";
+  } else {
+    formLogin.style.display = "none";
+    formCadastro.style.display = "block";
+  }
+}
+
+// Função para enviar os dados de cadastro para o backend
+async function cadastrar(e) {
+  e.preventDefault();
+
+  const usuario = document.getElementById("cad-usuario").value;
+  const senha = document.getElementById("cad-senha").value;
+  const msg = document.getElementById("cad-msg");
+
+  try {
+    msg.innerText = "Cadastrando...";
+    msg.style.color = "#333";
+
+    const res = await fetch("/usuarios", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ usuario, senha })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      msg.innerText = data.erro || "Erro ao cadastrar usuário.";
+      msg.style.color = "#d32f2f";
+      return;
+    }
+
+    // Se deu certo, avisa o usuário e volta para o login após 1.5 segundos
+    msg.innerText = "Cadastro realizado com sucesso! 🎉";
+    msg.style.color = "#2e7d32";
+
+    setTimeout(() => {
+      document.getElementById("cad-usuario").value = "";
+      document.getElementById("cad-senha").value = "";
+      alternarTelas();
+    }, 1500);
+
+  } catch (err) {
+    console.error(err);
+    msg.innerText = "Erro ao conectar com o servidor.";
+    msg.style.color = "#d32f2f";
+  }
 }

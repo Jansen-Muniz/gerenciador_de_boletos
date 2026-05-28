@@ -20,6 +20,12 @@ async function verificarSessao() {
 
     }
 
+    if (!res.ok) {
+      console.error("Servidor retornou erro ao buscar boletos");
+      boletos = []; // Evita o erro de boletos.sort() deixando a lista vazia
+      return;
+    }
+
     boletos = await res.json();
 
     console.log("sessão OK");
