@@ -1,9 +1,6 @@
 async function verificarSessao() {
-
   try {
-
     console.log("verificando sessão...");
-
     const res = await fetch("/boletos", {
       credentials: "include"
     });
@@ -11,62 +8,51 @@ async function verificarSessao() {
     console.log("status:", res.status);
 
     if (res.status === 401) {
-
       console.log("não autenticado");
-
       window.location.href = "login.html";
-
       return;
-
     }
 
     if (!res.ok) {
       console.error("Servidor retornou erro ao buscar boletos");
-      boletos = []; // Evita o erro de boletos.sort() deixando a lista vazia
+      boletos = [];
       return;
     }
 
     boletos = await res.json();
-
     console.log("sessão OK");
 
     renderizarBoletos();
-
     verificarVencimentos();
 
   } catch (err) {
-
     console.error("erro sessão:", err);
-
   }
-
 }
 
 const nomeInput = document.getElementById("nome");
 const valorInput = document.getElementById("valor");
 const vencimentoInput = document.getElementById("vencimento");
-
 const botaoSalvar = document.getElementById("salvar");
 const lista = document.getElementById("lista");
 
 let filtroAtual = "todos";
-
 valorInput.addEventListener("input", formatarMoeda);
 
 /* =========================
    DADOS
 ========================= */
 let boletos = [];
-let editandoIndex = null;
+let editandoId = null; // 👈 Mudado de index para ID para evitar conflito com filtros
 
 /* =========================
    HELPERS
 ========================= */
 function getHojeFormatado() {
-  const hoje = new Date();
-  return `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, "0")}-${String(
-    hoje.getDate()
-  ).padStart(2, "0")}`;
+  // 🕒 Garante a data correta no padrão brasileiro sem desvios de fuso do UTC
+  const fusoBrasil = { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" };
+  const [dia, mes, ano] = new Date().toLocaleDateString("pt-BR", fusoBrasil).split("/");
+  return `${ano}-${mes}-${dia}`;
 }
 
 /* =========================
@@ -74,9 +60,9 @@ function getHojeFormatado() {
 ========================= */
 function renderizarBoletos() {
   lista.innerHTML = "";
-
   const hojeFormatado = getHojeFormatado();
 
+  // Ordena o array global de forma estável
   boletos.sort((a, b) => {
     function prioridade(boleto) {
       if (boleto.pago) return 4;
@@ -91,10 +77,10 @@ function renderizarBoletos() {
     if (prioridadeA !== prioridadeB) {
       return prioridadeA - prioridadeB;
     }
-
     return a.vencimento.localeCompare(b.vencimento);
   });
 
+  // Filtra e renderiza
   boletos
     .filter((boleto) => {
       if (filtroAtual === "todos") return true;
@@ -103,7 +89,7 @@ function renderizarBoletos() {
       if (filtroAtual === "hoje") return !boleto.pago && boleto.vencimento === hojeFormatado;
       if (filtroAtual === "pendentes") return !boleto.pago && boleto.vencimento > hojeFormatado;
     })
-    .forEach((boleto, index) => {
+    .forEach((boleto) => { // 👈 Removido o 'index' daqui
       const div = document.createElement("div");
       div.classList.add("boleto");
 
@@ -131,7 +117,7 @@ function renderizarBoletos() {
             ${boleto.pago ? "Desfazer" : "Pago"}
           </button>
 
-          <button class="editar" onclick="editarBoleto(${index})">
+          <button class="editar" onclick="editarBoleto(${boleto.id})"> <!-- 👈 Passa o ID único -->
             Editar
           </button>
 
@@ -156,7 +142,6 @@ async function salvarBoleto() {
     .replace(",", ".");
 
   const vencimento = vencimentoInput.value;
-
   const valorNumerico = Number(valor);
 
   if (!nome.trim() || !valor || valorNumerico <= 0 || !vencimento) {
@@ -172,10 +157,10 @@ async function salvarBoleto() {
   };
 
   try {
-    if (editandoIndex !== null) {
-      const boletoEditando = boletos[editandoIndex];
+    if (editandoId !== null) { // 👈 Alterado para usar o ID único de edição
+      const boletoEditando = boletos.find(b => b.id === editandoId);
 
-      await fetch(`/boletos/${boletoEditando.id}`, {
+      await fetch(`/boletos/${editandoId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json"
@@ -183,13 +168,12 @@ async function salvarBoleto() {
         credentials: "include",
         body: JSON.stringify({
           ...novoBoleto,
-          pago: boletoEditando.pago
+          pago: boletoEditando.pago // Mantém o status de pago atual do boleto
         })
       });
 
-      editandoIndex = null;
-
-      mostrarToast("Boleto atualizado com sucesso!", "sucesso");
+      editandoId = null; // Reseta a variável de controle
+      mostrarToast("Boleto updated com sucesso!", "sucesso");
     } else {
       await fetch("/boletos", {
         method: "POST",
@@ -205,6 +189,9 @@ async function salvarBoleto() {
 
     await carregarBoletos();
     limparCampos();
+
+    // Altera o texto do botão de volta para Salvar caso estivesse em modo edição
+    botaoSalvar.innerText = "Salvar boleto";
   } catch (erro) {
     console.error(erro);
     mostrarToast("Erro ao salvar boleto", "erro");
@@ -222,7 +209,6 @@ async function excluirBoleto(id) {
     });
 
     await carregarBoletos();
-
     mostrarToast("Boleto excluído 😄", "sucesso");
   } catch (erro) {
     console.error(erro);
@@ -234,11 +220,9 @@ async function excluirBoleto(id) {
    PAGAR
 ========================= */
 async function marcarComoPago(id) {
-
   const boleto = boletos.find(b => b.id === id);
 
   try {
-
     await fetch(`/boletos/${id}`, {
       method: "PUT",
       headers: {
@@ -252,27 +236,20 @@ async function marcarComoPago(id) {
     });
 
     await carregarBoletos();
-
     mostrarToast("Boleto atualizado 😄", "sucesso");
-
   } catch (erro) {
-
     console.error(erro);
-
-    mostrarToast(
-      "Erro ao atualizar boleto",
-      "erro"
-    );
-
+    mostrarToast("Erro ao atualizar boleto", "erro");
   }
-
 }
 
 /* =========================
    EDITAR
 ========================= */
-function editarBoleto(index) {
-  const boleto = boletos[index];
+function editarBoleto(id) { // 👈 Mudado de 'index' para 'id' único do banco
+  const boleto = boletos.find(b => b.id === id); // Localiza o boleto real de forma segura
+
+  if (!boleto) return;
 
   nomeInput.value = boleto.nome;
 
@@ -282,7 +259,8 @@ function editarBoleto(index) {
 
   vencimentoInput.value = boleto.vencimento;
 
-  editandoIndex = index;
+  editandoId = id; // 👈 Atualiza a variável de controle global com o ID correto
+  botaoSalvar.innerText = "Atualizar boleto"; // Dá um feedback visual para o usuário
 
   mostrarToast("Editando boleto...", "info");
 }
@@ -294,6 +272,7 @@ function limparCampos() {
   nomeInput.value = "";
   valorInput.value = "";
   vencimentoInput.value = "";
+  editandoId = null; // Garante que limpou o estado de edição
 }
 
 function formatarData(data) {
@@ -330,19 +309,13 @@ function calcularDiasRestantes(vencimento) {
 }
 
 function verificarVencimentos() {
-
   const alerta = document.getElementById("alerta");
-
-  const hoje = new Date();
-
-  const hojeFormatado =
-    `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-${String(hoje.getDate()).padStart(2, '0')}`;
+  const hojeFormatado = getHojeFormatado(); // 👈 Consome o Helper com o fuso travado do Brasil
 
   let vencendoHoje = 0;
   let atrasados = 0;
 
   boletos.forEach((boleto) => {
-
     if (boleto.pago) return;
 
     if (boleto.vencimento === hojeFormatado) {
@@ -352,7 +325,6 @@ function verificarVencimentos() {
     if (boleto.vencimento < hojeFormatado) {
       atrasados++;
     }
-
   });
 
   let mensagem = "";
@@ -380,7 +352,6 @@ function verificarVencimentos() {
   }
 
   alerta.innerHTML = mensagem;
-
 }
 
 /* =========================
@@ -392,7 +363,6 @@ function mostrarToast(mensagem, tipo = "info") {
   const toast = document.getElementById("toast");
 
   clearTimeout(toastTimeout);
-
   toast.innerText = mensagem;
 
   if (tipo === "erro") toast.style.background = "#d32f2f";
@@ -412,11 +382,17 @@ function mostrarToast(mensagem, tipo = "info") {
 async function carregarBoletos() {
   try {
     const resposta = await fetch("/boletos", { credentials: "include" });
-    boletos = await resposta.json();
 
-    renderizarBoletos();
+    if (!resposta.ok) {
+      boletos = [];
+      return;
+    }
+
+    boletos = await resposta.json();
+    renderizarBoletos(); // 📲 Renderiza a lista atualizada na tela
   } catch (erro) {
     console.error("Erro ao carregar boletos:", erro);
+    boletos = [];
   }
 }
 
@@ -424,11 +400,10 @@ async function logout() {
   try {
     const res = await fetch("/logout", {
       method: "POST",
-      credentials: "include" // Garante o envio do cookie para ser destruído
+      credentials: "include"
     });
 
     if (res.ok) {
-      // Redireciona imediatamente para a tela de login
       window.location.href = "login.html";
     } else {
       mostrarToast("Erro ao fazer logout", "erro");
@@ -439,6 +414,22 @@ async function logout() {
   }
 }
 
+function enviarBoletosParaSegundoPlano() {
+  if (navigator.serviceWorker && navigator.serviceWorker.controller && boletos.length > 0) {
+    navigator.serviceWorker.controller.postMessage({
+      action: 'agendarChecagem',
+      boletos: boletos
+    });
+  }
+}
+
+/* =========================
+   FILTROS (Adicionado para corrigir o HTML)
+========================= */
+function filtrarBoletos(status) {
+  filtroAtual = status;
+  renderizarBoletos(); // Atualiza a tela aplicando a regra do filtro
+}
 
 /* =========================
    EVENTOS
@@ -449,11 +440,7 @@ botaoSalvar.addEventListener("click", salvarBoleto);
    INIT
 ========================= */
 window.onload = () => {
-
   setTimeout(async () => {
-
     await verificarSessao();
-
   }, 300);
-
 };

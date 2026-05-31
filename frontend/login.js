@@ -10,7 +10,6 @@ async function login(e) {
   const erro = document.getElementById("erro");
 
   try {
-
     console.log("Tentando login...");
 
     const res = await fetch("/login", {
@@ -23,34 +22,30 @@ async function login(e) {
     });
 
     console.log("STATUS:", res.status);
-
     const data = await res.json();
-
     console.log("RESPOSTA:", data);
 
     if (!res.ok) {
-
       erro.innerText = data.erro;
-
       console.log("ERRO LOGIN");
-
       return;
     }
 
     console.log("LOGIN OK");
 
+    // 👑 REDIRECIONAMENTO INTELIGENTE DO ADMIN
     setTimeout(() => {
-      window.location.href = "/index.html";
+      if (data.usuario === "admin") {
+        window.location.href = "/admin.html"; // Vai para a tela de monitoramento do Admin
+      } else {
+        window.location.href = "/index.html"; // Usuário comum vai para o gerenciador normal
+      }
     }, 200);
 
   } catch (err) {
-
     console.error(err);
-
     erro.innerText = "Erro ao conectar com servidor";
-
   }
-
 }
 
 // Função para alternar a exibição entre Login e Cadastro
@@ -77,8 +72,10 @@ function alternarTelas() {
 async function cadastrar(e) {
   e.preventDefault();
 
+  // 📥 Captura todos os 3 campos do HTML corretamente
   const usuario = document.getElementById("cad-usuario").value;
   const senha = document.getElementById("cad-senha").value;
+  const telefone = document.getElementById("cad-telefone").value; // ✨ Captura o telefone do HTML
   const msg = document.getElementById("cad-msg");
 
   try {
@@ -88,7 +85,8 @@ async function cadastrar(e) {
     const res = await fetch("/usuarios", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ usuario, senha })
+      // 📦 Envia o telefone junto no pacote para o servidor salvar no SQLite
+      body: JSON.stringify({ usuario, senha, telefone })
     });
 
     const data = await res.json();
@@ -99,13 +97,13 @@ async function cadastrar(e) {
       return;
     }
 
-    // Se deu certo, avisa o usuário e volta para o login após 1.5 segundos
     msg.innerText = "Cadastro realizado com sucesso! 🎉";
     msg.style.color = "#2e7d32";
 
     setTimeout(() => {
       document.getElementById("cad-usuario").value = "";
       document.getElementById("cad-senha").value = "";
+      document.getElementById("cad-telefone").value = ""; // Limpa o campo do telefone
       alternarTelas();
     }, 1500);
 
@@ -115,3 +113,4 @@ async function cadastrar(e) {
     msg.style.color = "#d32f2f";
   }
 }
+

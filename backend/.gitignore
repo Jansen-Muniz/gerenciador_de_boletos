@@ -1,1 +1,9 @@
-node_modules
+# WhatsApp Web.js (Tokens e Sessão)
+.wwebjs_auth/
+.wwebjs_cache/
+
+# Banco de Dados
+boletos.db
+
+# Módulos do Node
+node_modules/

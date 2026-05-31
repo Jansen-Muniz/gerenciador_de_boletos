@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel de Controle - Admin</title>
+  <!-- Reaproveita os estilos bases e adiciona melhorias se quiser -->
+  <link rel="stylesheet" href="admin.css">
+</head>
+
+<body>
+  <div class="container">
+    <button onclick="logoutAdmin()" class="btn-logout">🚪 Sair do Painel</button>
+
+    <h1>👑 Painel de Administração</h1>
+    <p>Monitoramento geral de usuários e notificações de boletos.</p>
+
+    <!-- SEÇÃO DE USUÁRIOS -->
+    <div class="admin-secao">
+      <h2>👥 Usuários Cadastrados</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nome de Usuário</th>
+            <th>WhatsApp Cadastrado</th>
+          </tr>
+        </thead>
+        <tbody id="tabela-usuarios">
+          <!-- Inserido dinamicamente via JS -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- SEÇÃO DE TODOS OS BOLETOS -->
+    <div class="admin-secao">
+      <h2>📄 Todos os Boletos do Sistema</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Dono do Boleto</th>
+            <th>Nome do Boleto</th>
+            <th>Valor</th>
+            <th>Vencimento</th>
+            <th>Status</th>
+            <th>WhatsApp Notificado?</th>
+          </tr>
+        </thead>
+        <tbody id="tabela-boletos">
+          <!-- Inserido dinamicamente via JS -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="admin.js"></script>
+</body>
+
+</html>
