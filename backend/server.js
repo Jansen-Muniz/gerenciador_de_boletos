@@ -8,6 +8,8 @@ const bcrypt = require("bcrypt");
 const cron = require("node-cron"); // 👈 Adicionado para agendamento
 const { Client, LocalAuth } = require("whatsapp-web.js"); // 👈 Adicionado para WhatsApp
 const qrcode = require("qrcode-terminal"); // 👈 Adicionado para ver o QR Code
+const SQLiteStore = require("connect-sqlite3")(session)
+
 
 // ==========================================
 // 1. CONFIGURAÇÃO E INICIALIZAÇÃO DO WHATSAPP
@@ -60,6 +62,10 @@ app.use(express.json());
 app.use(cors());
 
 app.use(session({
+  store: new SQLiteStore({
+    db: "database.db",
+    dir: "./"
+  }),
   secret: "segredo_super_seguro",
   resave: false,
   saveUninitialized: false,
@@ -71,9 +77,10 @@ app.use(session({
   }
 }));
 
+
 app.use(express.static(path.join(__dirname, "../frontend")));
 
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 function verificarLogin(req, res, next) {
   if (!req.session || !req.session.usuario) {
@@ -227,7 +234,7 @@ app.post("/logout", (req, res) => {
   if (req.session) {
     req.session.destroy((erro) => {
       if (erro) return res.status(500).json({ erro: "Erro ao encerrar a sessão" });
-      res.clearCookie("connect.sid");
+      res.clearCookie("connect.sid", { path: "/" });
       return res.json({ mensagem: "Logout realizado com sucesso! 😄" });
     });
   } else {
@@ -328,22 +335,6 @@ function verificarEEnviarNotificacoes() {
     console.log("🏁 Fim da rotina de checagem.");
   });
 }
-
-// Rota de teste manual para forçar o disparo das notificações via WhatsApp
-app.get("/api/testar-notificacao", async (req, res) => {
-  try {
-    const infoObtida = client.info;
-    const meuChatIdReal = infoObtida.wid._serialized;
-
-    console.log(`📱 O ID real do seu celular conectado é: ${meuChatIdReal}`);
-    await client.sendMessage(meuChatIdReal, "🎯 PARABÉNS! Se você está lendo isso, o robô acertou o seu chat real!");
-  } catch (erroBot) {
-    console.error("Erro no teste de ID real:", erroBot);
-  }
-
-  verificarEEnviarNotificacoes();
-  res.json({ mensagem: "Rotina de notificações executada! Cheque o terminal do VS Code." });
-});
 
 app.listen(PORT, () => {
   console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
