@@ -18,8 +18,8 @@ const client = new Client({
   authStrategy: new LocalAuth(),
   puppeteer: {
     headless: true,
-    // Se existir a variável na nuvem ele usa, senão (local) ele busca o padrão sozinho
-    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
+    // Caminho padrão do Chrome dentro da imagem estável do Puppeteer Docker
+    executablePath: process.env.RENDER ? '/usr/bin/google-chrome' : undefined,
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
@@ -27,7 +27,6 @@ const client = new Client({
     ]
   }
 });
-
 
 client.on("qr", (qr) => {
   qrcode.generate(qr, { small: true });
