@@ -10,15 +10,14 @@ const { Client, LocalAuth } = require("whatsapp-web.js"); // 👈 Adicionado par
 const qrcode = require("qrcode-terminal"); // 👈 Adicionado para ver o QR Code
 const SQLiteStore = require("connect-sqlite3")(session)
 
-
 // ==========================================
 // 1. CONFIGURAÇÃO E INICIALIZAÇÃO DO WHATSAPP
 // ==========================================
+//  COLE ESTE NO LUGAR:
 const client = new Client({
   authStrategy: new LocalAuth(),
   puppeteer: {
     headless: true,
-    // Caminho padrão do Chrome dentro da imagem estável do Puppeteer Docker
     executablePath: process.env.RENDER ? '/usr/bin/google-chrome' : undefined,
     args: [
       '--no-sandbox',
@@ -28,12 +27,17 @@ const client = new Client({
   }
 });
 
+// Variável global para guardar o último código gerado
+let ultimoQrCode = null;
+
 client.on("qr", (qr) => {
+  ultimoQrCode = qr; // Salva o texto do QR Code aqui para a rota usar
   qrcode.generate(qr, { small: true });
-  console.log("👉 Escaneie o QR Code acima com o seu WhatsApp de testes.");
+  console.log("👉 QR Code gerado no terminal.");
 });
 
 client.on("ready", () => {
+  ultimoQrCode = null; // Limpa o código quando conectar
   console.log("✅ Conexão com o WhatsApp estabelecida com sucesso!");
 });
 
@@ -78,7 +82,6 @@ app.use(session({
     maxAge: 1000 * 60 * 60 * 24
   }
 }));
-
 
 app.use(express.static(path.join(__dirname, "../frontend")));
 
@@ -167,6 +170,29 @@ app.get("/admin/dashboard", verificarLogin, (req, res) => {
   });
 });
 
+// ROTA PARA EXIBIR O QR CODE NA TELA DO NAVEGADOR
+const QRCodeDisplay = require("qrcode");
+app.get("/admin/qrcode", verificarLogin, (req, res) => {
+  if (req.session.usuario !== "admin") {
+    return res.status(403).send("Acesso negado.");
+  }
+
+  if (!ultimoQrCode) {
+    return res.send("<h1>🎉 WhatsApp já está conectado ou o código ainda não foi gerado!</h1>");
+  }
+
+  QRCodeDisplay.toDataURL(ultimoQrCode, (err, url) => {
+    if (err) return res.status(500).send("Erro ao gerar imagem do QR Code");
+    res.send(`
+      <div style="text-align: center; margin-top: 50px; font-family: sans-serif;">
+        <h2>📲 Escaneie o QR Code para ativar o Gerenciador de Boletos</h2>
+        <img src="${url}" style="width: 300px; border: 1px solid #ccc; padding: 10px; border-radius: 8px;" />
+        <p>Após escanear, atualize esta página para ver o status.</p>
+      </div>
+    `);
+  });
+});
+
 app.get("/boletos", verificarLogin, (req, res) => {
   const usuarioLogado = req.session.usuario;
   db.all("SELECT * FROM boletos WHERE usuario = ?", [usuarioLogado], (erro, rows) => {
@@ -220,7 +246,6 @@ app.put("/boletos/:id", verificarLogin, (req, res) => {
     }
   );
 });
-
 
 app.delete("/boletos/:id", verificarLogin, (req, res) => {
   const { id } = req.params;
