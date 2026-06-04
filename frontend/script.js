@@ -343,22 +343,44 @@ function verificarVencimentos() {
     mensagem += `⚠️ ${vencendoHoje} boleto(s) vencendo hoje<br>`;
   }
 
-  if (pendentes > 0) {
-    mensagem += `📄 ${pendentes} boleto(s) pendente(s)`;
+  const pendentesFuturos = pendentes - atrasados - vencendoHoje;
+
+  if (pendentesFuturos > 0) {
+    mensagem += `📄 ${pendentesFuturos} boleto(s) a vencer`;
   }
 
+  /* =========================
+     CORES DO ALERTA
+  ========================= */
+
   if (pendentes === 0) {
+
     mensagem = "✅ Nenhum boleto pendente";
+
     alerta.style.background = "#4caf50";
     alerta.style.color = "#fff";
+
   }
   else if (atrasados > 0) {
+
+    // vermelho tem prioridade máxima
     alerta.style.background = "#f44336";
     alerta.style.color = "#fff";
+
   }
-  else {
+  else if (vencendoHoje > 0) {
+
+    // laranja para atenção
     alerta.style.background = "#ff9800";
     alerta.style.color = "#000";
+
+  }
+  else {
+
+    // azul para boletos futuros
+    alerta.style.background = "#2196f3";
+    alerta.style.color = "#fff";
+
   }
 
   alerta.innerHTML = mensagem;
