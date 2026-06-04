@@ -173,7 +173,7 @@ async function salvarBoleto() {
       });
 
       editandoId = null; // Reseta a variável de controle
-      mostrarToast("Boleto updated com sucesso!", "sucesso");
+      mostrarToast("Boleto atualizado com sucesso!", "sucesso");
     } else {
       await fetch("/boletos", {
         method: "POST",
