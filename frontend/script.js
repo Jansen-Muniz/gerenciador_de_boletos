@@ -309,14 +309,19 @@ function calcularDiasRestantes(vencimento) {
 }
 
 function verificarVencimentos() {
+
   const alerta = document.getElementById("alerta");
-  const hojeFormatado = getHojeFormatado(); // 👈 Consome o Helper com o fuso travado do Brasil
+  const hojeFormatado = getHojeFormatado();
 
   let vencendoHoje = 0;
   let atrasados = 0;
+  let pendentes = 0;
 
   boletos.forEach((boleto) => {
+
     if (boleto.pago) return;
+
+    pendentes++;
 
     if (boleto.vencimento === hojeFormatado) {
       vencendoHoje++;
@@ -325,6 +330,7 @@ function verificarVencimentos() {
     if (boleto.vencimento < hojeFormatado) {
       atrasados++;
     }
+
   });
 
   let mensagem = "";
@@ -334,10 +340,14 @@ function verificarVencimentos() {
   }
 
   if (vencendoHoje > 0) {
-    mensagem += `⚠️ ${vencendoHoje} boleto(s) vencendo hoje`;
+    mensagem += `⚠️ ${vencendoHoje} boleto(s) vencendo hoje<br>`;
   }
 
-  if (mensagem === "") {
+  if (pendentes > 0) {
+    mensagem += `📄 ${pendentes} boleto(s) pendente(s)`;
+  }
+
+  if (pendentes === 0) {
     mensagem = "✅ Nenhum boleto pendente";
     alerta.style.background = "#4caf50";
     alerta.style.color = "#fff";
@@ -389,7 +399,11 @@ async function carregarBoletos() {
     }
 
     boletos = await resposta.json();
+
     renderizarBoletos(); // 📲 Renderiza a lista atualizada na tela
+
+    verificarVencimentos();
+
   } catch (erro) {
     console.error("Erro ao carregar boletos:", erro);
     boletos = [];
