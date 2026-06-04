@@ -16,6 +16,19 @@
     <h1>👑 Painel de Administração</h1>
     <p>Monitoramento geral de usuários e notificações de boletos.</p>
 
+    <!-- 🟢 NOVA SEÇÃO: STATUS E QR CODE DO WHATSAPP -->
+    <div class="admin-secao text-center">
+      <h2>💬 Status do Servidor WhatsApp</h2>
+      <div class="whatsapp-container"
+        style="padding: 20px; border-radius: 8px; background: #1e1e24; margin-bottom: 20px;">
+        <p id="status-whatsapp" style="font-weight: bold; font-size: 1.1em;">⚪ Inicializando o serviço do WhatsApp...
+        </p>
+        <!-- O QR code do backend será exibido aqui dentro -->
+        <img id="qrcode" src="" alt="QR Code WhatsApp"
+          style="display: none; margin: 15px auto; border: 10px solid white; border-radius: 4px; max-width: 250px;" />
+      </div>
+    </div>
+
     <!-- SEÇÃO DE USUÁRIOS -->
     <div class="admin-secao">
       <h2>👥 Usuários Cadastrados</h2>
