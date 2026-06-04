@@ -3,7 +3,7 @@
 .wwebjs_cache/
 
 # Banco de Dados
-boletos.db
+*.db
 
 # Módulos do Node
 node_modules/
