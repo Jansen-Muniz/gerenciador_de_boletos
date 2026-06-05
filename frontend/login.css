@@ -9,12 +9,11 @@ body {
 }
 
 .login-container {
-  background: #fff;
+  background: #e1e1f2;
   padding: 40px;
   border-radius: 12px;
   width: 300px;
   text-align: center;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 
 .login-container h2 {
@@ -22,7 +21,7 @@ body {
 }
 
 .login-container input {
-  width: 100%;
+  width: 92%;
   padding: 10px;
   margin: 8px 0;
   border-radius: 6px;
@@ -35,14 +34,14 @@ body {
   margin-top: 10px;
   border: none;
   border-radius: 6px;
-  background: #2e7d32;
+  background: #0A2540;
   color: white;
   cursor: pointer;
   font-size: 16px;
 }
 
 .login-container button:hover {
-  background: #1b5e20;
+  background: #13385d;
 }
 
 #erro {

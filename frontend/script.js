@@ -65,10 +65,20 @@ function renderizarBoletos() {
   // Ordena o array global de forma estável
   boletos.sort((a, b) => {
     function prioridade(boleto) {
+
       if (boleto.pago) return 4;
-      if (boleto.vencimento < hojeFormatado) return 1;
-      if (boleto.vencimento === hojeFormatado) return 2;
+
+      const hoje = new Date();
+      hoje.setHours(0, 0, 0, 0);
+
+      const vencimento = new Date(boleto.vencimento);
+      vencimento.setHours(0, 0, 0, 0);
+
+      if (vencimento < hoje) return 1;
+      if (vencimento.getTime() === hoje.getTime()) return 2;
+
       return 3;
+
     }
 
     const prioridadeA = prioridade(a);
@@ -77,7 +87,8 @@ function renderizarBoletos() {
     if (prioridadeA !== prioridadeB) {
       return prioridadeA - prioridadeB;
     }
-    return a.vencimento.localeCompare(b.vencimento);
+
+    return new Date(a.vencimento) - new Date(b.vencimento);
   });
 
   // Filtra e renderiza
@@ -257,7 +268,11 @@ function editarBoleto(id) { // 👈 Mudado de 'index' para 'id' único do banco
     .toFixed(2)
     .replace(".", ",");
 
-  vencimentoInput.value = boleto.vencimento;
+  valorInput.value = Number(boleto.valor)
+    .toFixed(2)
+    .replace(".", ",");
+
+  vencimentoInput.value = boleto.vencimento.split("T")[0];
 
   editandoId = id; // 👈 Atualiza a variável de controle global com o ID correto
   botaoSalvar.innerText = "Atualizar boleto"; // Dá um feedback visual para o usuário
@@ -276,8 +291,13 @@ function limparCampos() {
 }
 
 function formatarData(data) {
-  const [ano, mes, dia] = data.split("-");
-  return `${dia}/${mes}/${ano}`;
+
+  const dataObj = new Date(data);
+
+  return dataObj.toLocaleDateString("pt-BR", {
+    timeZone: "America/Sao_Paulo"
+  });
+
 }
 
 function formatarMoeda(e) {
@@ -292,12 +312,14 @@ function formatarMoeda(e) {
 }
 
 function calcularDiasRestantes(vencimento) {
+
   const hoje = new Date();
   hoje.setHours(0, 0, 0, 0);
 
-  const dataVencimento = new Date(vencimento + "T00:00:00");
+  const dataVencimento = new Date(vencimento);
+  dataVencimento.setHours(0, 0, 0, 0);
 
-  const dias = Math.floor(
+  const dias = Math.round(
     (dataVencimento - hoje) / (1000 * 60 * 60 * 24)
   );
 
@@ -306,6 +328,7 @@ function calcularDiasRestantes(vencimento) {
   if (dias === 1) return "⏰ Vence amanhã";
 
   return `📅 Vence em ${dias} dias`;
+
 }
 
 function verificarVencimentos() {

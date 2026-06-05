@@ -1,3 +1,4 @@
+require("dotenv").config();
 const cors = require("cors");
 const express = require("express");
 const app = express();
@@ -8,7 +9,42 @@ const bcrypt = require("bcrypt");
 const cron = require("node-cron"); // 👈 Adicionado para agendamento
 const { Client, LocalAuth } = require("whatsapp-web.js"); // 👈 Adicionado para WhatsApp
 const qrcode = require("qrcode-terminal"); // 👈 Adicionado para ver o QR Code
-const SQLiteStore = require("connect-sqlite3")(session)
+const PgStore = require("connect-pg-simple")(session);
+
+async function criarTabelas() {
+
+  try {
+
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS usuarios (
+        id SERIAL PRIMARY KEY,
+        usuario VARCHAR(100) UNIQUE NOT NULL,
+        senha TEXT NOT NULL,
+        telefone VARCHAR(20)
+      )
+    `);
+
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS boletos (
+        id SERIAL PRIMARY KEY,
+        nome VARCHAR(255) NOT NULL,
+        valor NUMERIC(10,2) NOT NULL,
+        vencimento DATE NOT NULL,
+        pago INTEGER NOT NULL DEFAULT 0,
+        usuario VARCHAR(100),
+        notificacao_enviada INTEGER DEFAULT 0
+      )
+    `);
+
+    console.log("✅ Tabelas criadas/verificadas");
+
+  } catch (erro) {
+
+    console.error("Erro ao criar tabelas:", erro);
+
+  }
+
+}
 
 // ==========================================
 // 1. CONFIGURAÇÃO E INICIALIZAÇÃO DO WHATSAPP
@@ -43,36 +79,77 @@ client.on("ready", () => {
 
 client.initialize();
 
-function criarAdminSeNaoExistir() {
-  const senhaHash = bcrypt.hashSync("123456", 10);
+async function criarAdminSeNaoExistir() {
 
-  // Como o SQLite não aceita INSERT OR IGNORE com colunas novas se a tabela falhar,
-  // vamos verificar primeiro se o admin já existe
-  db.get("SELECT * FROM usuarios WHERE usuario = ?", ["admin"], (err, row) => {
-    if (!row) {
-      db.run(`
+  try {
+
+    const senhaHash = bcrypt.hashSync("123456", 10);
+
+    const resultado = await db.query(
+      "SELECT * FROM usuarios WHERE usuario = $1",
+      ["admin"]
+    );
+
+    if (resultado.rows.length === 0) {
+
+      await db.query(
+        `
         INSERT INTO usuarios (usuario, senha, telefone)
-        VALUES (?, ?, ?)
-      `, ["admin", senhaHash, "558988039351"]); // 👈 LEMBRE DE MANDAR SEU NÚMERO REAL AQUI
+        VALUES ($1, $2, $3)
+        `,
+        ["admin", senhaHash, "558988039351"]
+      );
+
       console.log("👤 Usuário admin criado com sucesso.");
+
     }
-  });
+
+  } catch (erro) {
+
+    console.error("Erro ao criar admin:", erro);
+
+  }
+
 }
 
-criarAdminSeNaoExistir();
+(async () => {
+
+  await criarTabelas();
+
+  await criarAdminSeNaoExistir();
+
+})();
 
 // ==========================================
 // 3. MIDDLEWARES E CONFIGURAÇÕES EXPRESS
 // ==========================================
 app.use(express.json());
 app.use(cors());
+/*
+app.use(session({
+  store: new PgStore({
+    pool: db,
+    tableName: "user_sessions"
+  }),
+  secret: process.env.SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    httpOnly: true,
+    secure: false,
+    sameSite: "lax",
+    maxAge: 1000 * 60 * 60 * 24
+  }
+}));
+*/
 
 app.use(session({
-  store: new SQLiteStore({
-    db: "database.db",
-    dir: "./"
+  store: new PgStore({
+    pool: db,
+    tableName: "user_sessions",
+    createTableIfMissing: true
   }),
-  secret: "segredo_super_seguro",
+  secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
   cookie: {
@@ -98,42 +175,111 @@ function verificarLogin(req, res, next) {
 // 4. ROTAS DO SISTEMA
 // ==========================================
 
-app.post("/login", (req, res) => {
-  const { usuario, senha } = req.body;
+app.post("/login", async (req, res) => {
 
-  db.get("SELECT * FROM usuarios WHERE usuario = ?", [usuario], (err, user) => {
-    if (err) return res.status(500).json({ erro: err.message });
-    if (!user) return res.status(401).json({ erro: "Usuário não encontrado" });
+  try {
 
-    const senhaOk = bcrypt.compareSync(senha, user.senha);
-    if (!senhaOk) return res.status(401).json({ erro: "Senha inválida" });
+    const { usuario, senha } = req.body;
+
+    const resultado = await db.query(
+      "SELECT * FROM usuarios WHERE usuario = $1",
+      [usuario]
+    );
+
+    if (resultado.rows.length === 0) {
+
+      return res.status(401).json({
+        erro: "Usuário não encontrado"
+      });
+
+    }
+
+    const user = resultado.rows[0];
+
+    const senhaOk = bcrypt.compareSync(
+      senha,
+      user.senha
+    );
+
+    if (!senhaOk) {
+
+      return res.status(401).json({
+        erro: "Senha inválida"
+      });
+
+    }
 
     req.session.usuario = user.usuario;
 
-    res.json({ mensagem: "Login realizado 😄", usuario: user.usuario });
-  });
-});
+    res.json({
+      mensagem: "Login realizado 😄",
+      usuario: user.usuario
+    });
 
-app.post("/usuarios", (req, res) => {
-  const { usuario, senha, telefone } = req.body; // 👈 Recebe o telefone no cadastro
-  if (!usuario || !senha || usuario.trim() === "") {
-    return res.status(400).json({ erro: "Preencha os campos corretamente." });
+  } catch (erro) {
+
+    console.error(erro);
+
+    res.status(500).json({
+      erro: erro.message
+    });
+
   }
 
-  db.get("SELECT * FROM usuarios WHERE usuario = ?", [usuario], (err, user) => {
-    if (err) return res.status(500).json({ erro: err.message });
-    if (user) return res.status(400).json({ erro: "Este nome de usuário já está em uso." });
+});
+
+app.post("/usuarios", async (req, res) => {
+
+  try {
+
+    const { usuario, senha, telefone } = req.body;
+
+    if (!usuario || !senha || usuario.trim() === "") {
+      return res.status(400).json({
+        erro: "Preencha os campos corretamente."
+      });
+    }
+
+    const usuarioExistente = await db.query(
+      "SELECT * FROM usuarios WHERE usuario = $1",
+      [usuario]
+    );
+
+    if (usuarioExistente.rows.length > 0) {
+      return res.status(400).json({
+        erro: "Este nome de usuário já está em uso."
+      });
+    }
 
     const senhaHash = bcrypt.hashSync(senha, 10);
-    db.run(
-      "INSERT INTO usuarios (usuario, senha, telefone) VALUES (?, ?, ?)",
-      [usuario, senhaHash, telefone || null],
-      function (erroCadastro) {
-        if (erroCadastro) return res.status(500).json({ erro: erroCadastro.message });
-        return res.status(201).json({ mensagem: "Usuário criado com sucesso!" });
-      }
+
+    await db.query(
+      `
+      INSERT INTO usuarios
+      (usuario, senha, telefone)
+      VALUES ($1, $2, $3)
+      `,
+      [
+        usuario,
+        senhaHash,
+        telefone || null
+      ]
     );
-  });
+
+    res.status(201).json({
+      mensagem: "Usuário criado com sucesso!"
+    });
+
+  } catch (erro) {
+
+    console.error(erro);
+
+    res.status(500).json({
+      erro: erro.message
+    });
+
+  }
+
 });
 
 // ==========================================
@@ -141,33 +287,63 @@ app.post("/usuarios", (req, res) => {
 // ==========================================
 
 // 1. Rota para o admin listar os usuários do sistema
-app.get("/admin/usuarios", verificarLogin, (req, res) => {
-  if (req.session.usuario !== "admin") {
-    return res.status(403).json({ erro: "Acesso negado. Apenas para administradores." });
+app.get("/admin/usuarios", verificarLogin, async (req, res) => {
+
+  try {
+
+    if (req.session.usuario !== "admin") {
+      return res.status(403).json({
+        erro: "Acesso negado. Apenas para administradores."
+      });
+    }
+
+    const resultado = await db.query(
+      "SELECT id, usuario, telefone FROM usuarios ORDER BY id"
+    );
+
+    res.json(resultado.rows);
+
+  } catch (erro) {
+
+    console.error(erro);
+
+    res.status(500).json({
+      erro: erro.message
+    });
+
   }
 
-  db.all("SELECT id, usuario, telefone FROM usuarios", [], (erro, rows) => {
-    if (erro) return res.status(500).json({ erro: erro.message });
-    res.json(rows);
-  });
 });
-
 // 2. Rota para o admin ver todos os boletos de todos os usuários
-app.get("/admin/dashboard", verificarLogin, (req, res) => {
-  if (req.session.usuario !== "admin") {
-    return res.status(403).json({ erro: "Acesso negado. Apenas para administradores." });
+app.get("/admin/dashboard", verificarLogin, async (req, res) => {
+
+  try {
+
+    if (req.session.usuario !== "admin") {
+      return res.status(403).json({
+        erro: "Acesso negado. Apenas para administradores."
+      });
+    }
+
+    const resultado = await db.query(`
+      SELECT boletos.*, usuarios.telefone
+      FROM boletos
+      INNER JOIN usuarios
+      ON boletos.usuario = usuarios.usuario
+    `);
+
+    res.json(resultado.rows);
+
+  } catch (erro) {
+
+    console.error(erro);
+
+    res.status(500).json({
+      erro: erro.message
+    });
+
   }
 
-  const sql = `
-    SELECT boletos.*, usuarios.telefone 
-    FROM boletos 
-    INNER JOIN usuarios ON boletos.usuario = usuarios.usuario
-  `;
-
-  db.all(sql, [], (erro, rows) => {
-    if (erro) return res.status(500).json({ erro: erro.message });
-    res.json(rows);
-  });
 });
 
 // ROTA PARA EXIBIR O QR CODE NA TELA DO NAVEGADOR
@@ -193,68 +369,145 @@ app.get("/admin/qrcode", verificarLogin, (req, res) => {
   });
 });
 
-app.get("/boletos", verificarLogin, (req, res) => {
-  const usuarioLogado = req.session.usuario;
-  db.all("SELECT * FROM boletos WHERE usuario = ?", [usuarioLogado], (erro, rows) => {
-    if (erro) return res.status(500).json({ erro: erro.message });
-    res.json(rows);
-  });
+app.get("/boletos", verificarLogin, async (req, res) => {
+
+  try {
+
+    const resultado = await db.query(
+      "SELECT * FROM boletos ORDER BY vencimento ASC"
+    );
+
+    res.json(resultado.rows);
+
+  } catch (erro) {
+
+    console.error(erro);
+
+    res.status(500).json({
+      erro: erro.message
+    });
+
+  }
+
 });
 
-app.post("/boletos", verificarLogin, (req, res) => {
-  const { nome, valor, vencimento, pago } = req.body;
-  const usuarioLogado = req.session.usuario;
+app.post("/boletos", verificarLogin, async (req, res) => {
 
-  const sql = `
-    INSERT INTO boletos (nome, valor, vencimento, pago, usuario, notificacao_enviada)
-    VALUES (?, ?, ?, ?, ?, 0)
-  `;
+  try {
 
-  db.run(sql, [nome, valor, vencimento, pago ? 1 : 0, usuarioLogado], function (erro) {
-    if (erro) return res.status(500).json({ erro: erro.message });
-    res.status(201).json({ id: this.lastID, nome, valor, vencimento, pago });
-  });
+    const { nome, valor, vencimento, pago } = req.body;
+    const usuarioLogado = req.session.usuario;
+
+    const resultado = await db.query(
+      `
+      INSERT INTO boletos
+      (nome, valor, vencimento, pago, usuario, notificacao_enviada)
+      VALUES ($1, $2, $3, $4, $5, 0)
+      RETURNING *
+      `,
+      [
+        nome,
+        valor,
+        vencimento,
+        pago ? 1 : 0,
+        usuarioLogado
+      ]
+    );
+
+    res.status(201).json(resultado.rows[0]);
+
+  } catch (erro) {
+
+    console.error(erro);
+
+    res.status(500).json({
+      erro: erro.message
+    });
+
+  }
+
 });
 
-app.put("/boletos/:id", verificarLogin, (req, res) => {
-  const { id } = req.params;
-  const { nome, valor, vencimento, pago } = req.body;
-  const usuarioLogado = req.session.usuario;
+app.put("/boletos/:id", verificarLogin, async (req, res) => {
 
-  // Se o boleto foi marcado como PAGO (1), não precisa mais notificar.
-  // Se foi marcado como NÃO PAGO (0), resetamos para 0 para permitir novos avisos caso mude de ideia.
-  const notificacaoStatus = pago ? 1 : 0;
+  try {
 
-  db.run(
-    `UPDATE boletos 
-     SET nome = ?, valor = ?, vencimento = ?, pago = ?, notificacao_enviada = ? 
-     WHERE id = ? AND usuario = ?`,
-    [
-      nome,
-      valor,
-      vencimento,
-      pago ? 1 : 0,
-      notificacaoStatus,
-      id,
-      usuarioLogado
-    ],
-    function (erro) {
-      if (erro) {
-        return res.status(500).json({ erro: erro.message });
-      }
-      res.json({ mensagem: "Atualizado com sucesso 😄" });
-    }
-  );
+    const { id } = req.params;
+    const { nome, valor, vencimento, pago } = req.body;
+
+    const usuarioLogado = req.session.usuario;
+
+    const notificacaoStatus = pago ? 1 : 0;
+
+    await db.query(
+      `
+      UPDATE boletos
+      SET
+        nome = $1,
+        valor = $2,
+        vencimento = $3,
+        pago = $4,
+        notificacao_enviada = $5
+      WHERE id = $6
+      AND usuario = $7
+      `,
+      [
+        nome,
+        valor,
+        vencimento,
+        pago ? 1 : 0,
+        notificacaoStatus,
+        id,
+        usuarioLogado
+      ]
+    );
+
+    res.json({
+      mensagem: "Atualizado com sucesso 😄"
+    });
+
+  } catch (erro) {
+
+    console.error(erro);
+
+    res.status(500).json({
+      erro: erro.message
+    });
+
+  }
+
 });
 
-app.delete("/boletos/:id", verificarLogin, (req, res) => {
-  const { id } = req.params;
-  const usuarioLogado = req.session.usuario;
+app.delete("/boletos/:id", verificarLogin, async (req, res) => {
 
-  db.run("DELETE FROM boletos WHERE id = ? AND usuario = ?", [id, usuarioLogado], function (erro) {
-    if (erro) return res.status(500).json({ erro: erro.message });
-    res.json({ mensagem: "Boleto excluído 😄" });
-  });
+  try {
+
+    const { id } = req.params;
+    const usuarioLogado = req.session.usuario;
+
+    await db.query(
+      `
+      DELETE FROM boletos
+      WHERE id = $1
+      AND usuario = $2
+      `,
+      [id, usuarioLogado]
+    );
+
+    res.json({
+      mensagem: "Boleto excluído 😄"
+    });
+
+  } catch (erro) {
+
+    console.error(erro);
+
+    res.status(500).json({
+      erro: erro.message
+    });
+
+  }
+
 });
 
 app.post("/logout", (req, res) => {
@@ -282,7 +535,7 @@ cron.schedule("0 8 * * *", () => {
 });
 
 // Função que faz a busca de datas e dispara as mensagens
-function verificarEEnviarNotificacoes() {
+async function verificarEEnviarNotificacoes() {
   console.log("⏰ Iniciando checagem diária de boletos para o WhatsApp...");
 
   const query = `
@@ -292,75 +545,162 @@ function verificarEEnviarNotificacoes() {
     WHERE boletos.pago = 0 AND boletos.notificacao_enviada = 0 AND usuarios.telefone IS NOT NULL
   `;
 
-  db.all(query, [], async (erro, rows) => {
-    if (erro) {
-      console.error("❌ Erro ao buscar boletos para notificação:", erro.message);
-      return;
-    }
+  try {
+
+    const resultado = await db.query(query);
+    const rows = resultado.rows;
 
     console.log(`📊 O banco retornou ${rows.length} boleto(s) pendente(s) com telefone cadastrado.`);
 
     // 🕒 FORMATO UNIVERSAL SEGURO (Garante YYYY-MM-DD puro baseado no fuso do Brasil)
-    const agoraBR = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+    const agoraBR = new Date(
+      new Date().toLocaleString("en-US", {
+        timeZone: "America/Sao_Paulo"
+      })
+    );
 
-    const hoje = agoraBR.toISOString().split('T')[0];
+    const hoje = agoraBR.toISOString().split("T")[0];
 
     const amanhaBR = new Date(agoraBR);
     amanhaBR.setDate(amanhaBR.getDate() + 1);
-    const amanha = amanhaBR.toISOString().split('T')[0];
+
+    const amanha = amanhaBR.toISOString().split("T")[0];
 
     console.log(`📅 Datas de checagem -> Hoje: "${hoje}" | Amanhã: "${amanha}"`);
 
     for (const boleto of rows) {
-      // Remove espaços extras invisíveis das strings para evitar erros de comparação
-      const vencimentoBoleto = boleto.vencimento.trim();
 
-      console.log(`🔹 Comparando boleto: "${boleto.nome}" | Vencimento no Banco: "${vencimentoBoleto}"`);
+      // PostgreSQL retorna timestamp/date em formato diferente
+      const vencimentoBoleto = new Date(boleto.vencimento)
+        .toISOString()
+        .split("T")[0];
+
+      console.log(
+        `🔹 Comparando boleto: "${boleto.nome}" | Vencimento no Banco: "${vencimentoBoleto}"`
+      );
 
       if (vencimentoBoleto === hoje || vencimentoBoleto === amanha) {
-        const momento = vencimentoBoleto === hoje ? "VENCE HOJE" : "VENCE AMANHÃ";
 
-        const valorFormatado = Number(boleto.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
-        const dataFormatada = vencimentoBoleto.split("-").reverse().join("/");
+        const momento =
+          vencimentoBoleto === hoje
+            ? "VENCE HOJE"
+            : "VENCE AMANHÃ";
 
-        const mensagem = `⚠️ *Lembrete de Boleto* ⚠️\n\nOlá! O boleto *${boleto.nome}* no valor de *R$ ${valorFormatado}* ${momento} (${dataFormatada}).\n\nPor favor, efetue o pagamento para evitar juros!`;
+        const valorFormatado = Number(
+          boleto.valor
+        ).toLocaleString("pt-BR", {
+          minimumFractionDigits: 2
+        });
+
+        const dataFormatada = vencimentoBoleto
+          .split("-")
+          .reverse()
+          .join("/");
+
+        const mensagem =
+          `⚠️ *Lembrete de Boleto* ⚠️\n\n` +
+          `Olá! O boleto *${boleto.nome}* no valor de *R$ ${valorFormatado}* ${momento} (${dataFormatada}).\n\n` +
+          `Por favor, efetue o pagamento para evitar juros!`;
 
         try {
+
+          if (!boleto.telefone) {
+            console.log(`⚠️ Usuário sem telefone cadastrado.`);
+            continue;
+          }
+
           let numeroLimpo = boleto.telefone.replace(/\D/g, "");
 
-          if (!numeroLimpo.startsWith("55") && numeroLimpo.length >= 10) {
+          if (
+            !numeroLimpo.startsWith("55") &&
+            numeroLimpo.length >= 10
+          ) {
             numeroLimpo = "55" + numeroLimpo;
           }
 
-          console.log(`🔍 Pesquisando número no WhatsApp: ${numeroLimpo}`);
-          let idCadastrado = await client.getNumberId(numeroLimpo);
+          console.log(
+            `🔍 Pesquisando número no WhatsApp: ${numeroLimpo}`
+          );
 
-          if (!idCadastrado && numeroLimpo.length === 13) {
+          let idCadastrado =
+            await client.getNumberId(numeroLimpo);
+
+          if (
+            !idCadastrado &&
+            numeroLimpo.length === 13
+          ) {
+
             const ddiEDdd = numeroLimpo.substring(0, 4);
             const restoDoNumero = numeroLimpo.substring(5);
-            const numeroSemNono = ddiEDdd + restoDoNumero;
 
-            console.log(`⚠️ Falhou com o 9. Tentando sem o 9º dígito: ${numeroSemNono}`);
-            idCadastrado = await client.getNumberId(numeroSemNono);
+            const numeroSemNono =
+              ddiEDdd + restoDoNumero;
+
+            console.log(
+              `⚠️ Falhou com o 9. Tentando sem o 9º dígito: ${numeroSemNono}`
+            );
+
+            idCadastrado =
+              await client.getNumberId(numeroSemNono);
           }
 
           if (idCadastrado) {
-            await client.sendMessage(idCadastrado._serialized, mensagem);
 
-            db.run("UPDATE boletos SET notificacao_enviada = 1 WHERE id = ?", [boleto.id]);
-            console.log(`📨 ✅ Notificação enviada com sucesso para ${boleto.telefone}`);
+            await client.sendMessage(
+              idCadastrado._serialized,
+              mensagem
+            );
+
+            await db.query(
+              `
+            UPDATE boletos
+            SET notificacao_enviada = 1
+            WHERE id = $1
+            `,
+              [boleto.id]
+            );
+
+            console.log(
+              `📨 ✅ Notificação enviada com sucesso para ${boleto.telefone}`
+            );
+
           } else {
-            console.error(`❌ O número ${boleto.telefone} não pôde ser validado no WhatsApp.`);
+
+            console.error(
+              `❌ O número ${boleto.telefone} não pôde ser validado no WhatsApp.`
+            );
+
           }
+
         } catch (whatsappError) {
-          console.error(`❌ Erro interno ao processar o envio para ${boleto.telefone}:`, whatsappError);
+
+          console.error(
+            `❌ Erro interno ao processar o envio para ${boleto.telefone}:`,
+            whatsappError
+          );
+
         }
+
       } else {
-        console.log(`⏭️ Boleto "${boleto.nome}" pulado porque a data "${vencimentoBoleto}" não é igual a hoje ou amanhã.`);
+
+        console.log(
+          `⏭️ Boleto "${boleto.nome}" pulado porque a data "${vencimentoBoleto}" não é igual a hoje ou amanhã.`
+        );
+
       }
+
     }
+
     console.log("🏁 Fim da rotina de checagem.");
-  });
+
+  } catch (erro) {
+
+    console.error(
+      "❌ Erro ao buscar boletos para notificação:",
+      erro.message
+    );
+
+  }
 }
 
 app.listen(PORT, () => {
