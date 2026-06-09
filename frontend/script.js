@@ -88,7 +88,7 @@ function renderizarBoletos() {
       return prioridadeA - prioridadeB;
     }
 
-    return new Date(a.vencimento) - new Date(b.vencimento);
+    return a.vencimento.localeCompare(b.vencimento);
   });
 
   // Filtra e renderiza
@@ -292,11 +292,11 @@ function limparCampos() {
 
 function formatarData(data) {
 
-  const dataObj = new Date(data);
+  const dataSemHora = data.split("T")[0];
 
-  return dataObj.toLocaleDateString("pt-BR", {
-    timeZone: "America/Sao_Paulo"
-  });
+  const [ano, mes, dia] = dataSemHora.split("-");
+
+  return `${dia}/${mes}/${ano}`;
 
 }
 
@@ -313,11 +313,13 @@ function formatarMoeda(e) {
 
 function calcularDiasRestantes(vencimento) {
 
-  const hoje = new Date();
-  hoje.setHours(0, 0, 0, 0);
+  const hojeStr = getHojeFormatado(); // YYYY-MM-DD
 
-  const dataVencimento = new Date(vencimento);
-  dataVencimento.setHours(0, 0, 0, 0);
+  const hoje = new Date(`${hojeStr}T00:00:00`);
+
+  const vencimentoStr = vencimento.split("T")[0];
+
+  const dataVencimento = new Date(`${vencimentoStr}T00:00:00`);
 
   const dias = Math.round(
     (dataVencimento - hoje) / (1000 * 60 * 60 * 24)
