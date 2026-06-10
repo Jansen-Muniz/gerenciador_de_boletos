@@ -97,7 +97,11 @@ client.on("change_state", (state) => {
   console.log(`🔄 Estado: ${state}`);
 });
 
+console.log("🚀 Inicializando cliente WhatsApp");
+
 client.initialize();
+
+console.log("✅ Cliente WhatsApp criado");
 
 async function criarAdminSeNaoExistir() {
 
