@@ -1,3 +1,9 @@
+console.log("DATABASE_URL existe?", !!process.env.DATABASE_URL);
+console.log(
+  "DATABASE_URL início:",
+  process.env.DATABASE_URL?.substring(0, 40)
+);
+
 const { Pool } = require("pg");
 
 const pool = new Pool({
