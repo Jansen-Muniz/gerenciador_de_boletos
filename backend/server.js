@@ -49,7 +49,7 @@ async function criarTabelas() {
 // ==========================================
 // 1. CONFIGURAÇÃO E INICIALIZAÇÃO DO WHATSAPP
 // ==========================================
-//  COLE ESTE NO LUGAR:
+
 const client = new Client({
   authStrategy: new LocalAuth(),
   puppeteer: {
@@ -87,6 +87,14 @@ client.on("auth_failure", (msg) => {
 
 client.on("disconnected", (reason) => {
   console.log("🔌 WhatsApp desconectado:", reason);
+});
+
+client.on("loading_screen", (percent, message) => {
+  console.log(`📱 Loading: ${percent}% - ${message}`);
+});
+
+client.on("change_state", (state) => {
+  console.log(`🔄 Estado: ${state}`);
 });
 
 client.initialize();
