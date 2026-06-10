@@ -77,6 +77,18 @@ client.on("ready", () => {
   console.log("✅ Conexão com o WhatsApp estabelecida com sucesso!");
 });
 
+client.on("authenticated", () => {
+  console.log("🔐 WhatsApp autenticado");
+});
+
+client.on("auth_failure", (msg) => {
+  console.log("❌ Falha na autenticação:", msg);
+});
+
+client.on("disconnected", (reason) => {
+  console.log("🔌 WhatsApp desconectado:", reason);
+});
+
 client.initialize();
 
 async function criarAdminSeNaoExistir() {
