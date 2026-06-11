@@ -74,6 +74,7 @@ client.on("qr", (qr) => {
 
 client.on("ready", () => {
   ultimoQrCode = null; // Limpa o código quando conectar
+
   console.log("✅ Conexão com o WhatsApp estabelecida com sucesso!");
   console.log("🎉 READY DISPAROU!");
 });
