@@ -101,8 +101,13 @@ console.log("🚀 Inicializando cliente WhatsApp");
 
 client.initialize();
 
-setInterval(() => {
-  console.log("📋 client.info:", client.info);
+setInterval(async () => {
+  try {
+    const state = await client.getState();
+    console.log("📱 Estado atual:", state);
+  } catch (err) {
+    console.log("❌ Erro ao obter estado:", err.message);
+  }
 }, 15000);
 
 console.log("✅ Cliente WhatsApp criado");
