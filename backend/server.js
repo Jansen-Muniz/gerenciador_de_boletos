@@ -101,6 +101,10 @@ console.log("🚀 Inicializando cliente WhatsApp");
 
 client.initialize();
 
+setInterval(() => {
+  console.log("📋 client.info:", client.info);
+}, 15000);
+
 console.log("✅ Cliente WhatsApp criado");
 
 async function criarAdminSeNaoExistir() {
