@@ -101,14 +101,10 @@ console.log("🚀 Inicializando cliente WhatsApp");
 
 client.initialize();
 
-setInterval(async () => {
-  try {
-    const state = await client.getState();
-    console.log("📱 Estado atual:", state);
-  } catch (err) {
-    console.log("❌ Erro ao obter estado:", err.message);
-  }
-}, 15000);
+setTimeout(() => {
+  console.log("🧪 Executando teste manual...");
+  verificarEEnviarNotificacoes();
+}, 10000);
 
 console.log("✅ Cliente WhatsApp criado");
 
@@ -158,23 +154,6 @@ async function criarAdminSeNaoExistir() {
 // ==========================================
 app.use(express.json());
 app.use(cors());
-/*
-app.use(session({
-  store: new PgStore({
-    pool: db,
-    tableName: "user_sessions"
-  }),
-  secret: process.env.SESSION_SECRET,
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    httpOnly: true,
-    secure: false,
-    sameSite: "lax",
-    maxAge: 1000 * 60 * 60 * 24
-  }
-}));
-*/
 
 app.use(session({
   store: new PgStore({
@@ -571,6 +550,22 @@ cron.schedule("0 8 * * *", () => {
 async function verificarEEnviarNotificacoes() {
   console.log("⏰ Iniciando checagem diária de boletos para o WhatsApp...");
 
+  try {
+    const estado = await client.getState();
+
+    if (estado !== "CONNECTED") {
+      console.log(
+        `⚠️ WhatsApp não está conectado. Estado atual: ${estado}`
+      );
+      return;
+    }
+  } catch (erroEstado) {
+    console.log(
+      `⚠️ Não foi possível verificar o estado do WhatsApp: ${erroEstado.message}`
+    );
+    return;
+  }
+
   const query = `
     SELECT boletos.id, boletos.nome, boletos.valor, boletos.vencimento, usuarios.telefone 
     FROM boletos 
@@ -655,8 +650,12 @@ async function verificarEEnviarNotificacoes() {
             `🔍 Pesquisando número no WhatsApp: ${numeroLimpo}`
           );
 
+          console.log("📱 Tentando validar número no WhatsApp...");
+
           let idCadastrado =
             await client.getNumberId(numeroLimpo);
+
+          console.log("📱 Resultado:", idCadastrado);
 
           if (
             !idCadastrado &&
