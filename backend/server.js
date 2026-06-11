@@ -101,6 +101,7 @@ console.log("🚀 Inicializando cliente WhatsApp");
 
 client.initialize();
 
+/*
 setInterval(async () => {
   try {
     const state = await client.getState();
@@ -109,6 +110,7 @@ setInterval(async () => {
     console.log("❌ Erro ao obter estado:", err.message);
   }
 }, 15000);
+*/
 
 setTimeout(() => {
   console.log("🧪 Executando teste manual...");
