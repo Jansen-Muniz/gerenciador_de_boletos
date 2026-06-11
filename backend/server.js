@@ -75,6 +75,7 @@ client.on("qr", (qr) => {
 client.on("ready", () => {
   ultimoQrCode = null; // Limpa o código quando conectar
   console.log("✅ Conexão com o WhatsApp estabelecida com sucesso!");
+  console.log("🎉 READY DISPAROU!");
 });
 
 client.on("authenticated", () => {
@@ -110,12 +111,13 @@ setInterval(async () => {
     console.log("❌ Erro ao obter estado:", err.message);
   }
 }, 15000);
-*/
 
 setTimeout(() => {
   console.log("🧪 Executando teste manual...");
   verificarEEnviarNotificacoes();
 }, 10000);
+*/
+
 
 console.log("✅ Cliente WhatsApp criado");
 
@@ -751,6 +753,7 @@ app.listen(PORT, () => {
   console.log("⏳ Aguardando 5 segundos para rodar um teste automático de notificações...");
 
   // 🔄 Executa a checagem automaticamente 5 segundos após o servidor ligar
+  /*
   setTimeout(() => {
     if (client.info) {
       console.log("🎯 WhatsApp está pronto! Iniciando varredura de teste...");
@@ -765,4 +768,5 @@ app.listen(PORT, () => {
       });
     }
   }, 5000);
+*/
 });
