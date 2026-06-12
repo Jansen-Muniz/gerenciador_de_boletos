@@ -58,9 +58,14 @@ const client = new Client({
     headless: true,
     executablePath: process.env.RENDER ? "/usr/bin/google-chrome" : undefined,
     args: [
-      "--no-sandbox",
-      "--disable-setuid-sandbox",
-      "--disable-dev-shm-usage"
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-gpu',
+      '--disable-extensions',
+      '--disable-background-networking',
+      '--disable-background-timer-throttling',
+      '--disable-renderer-backgrounding'
     ]
   }
 });
@@ -102,6 +107,10 @@ client.on("loading_screen", (percent, message) => {
 
 client.on("change_state", (state) => {
   console.log(`🔄 Estado: ${state}`);
+});
+
+client.on("remote_session_saved", () => {
+  console.log("💾 Sessão salva");
 });
 
 console.log("🚀 Inicializando cliente WhatsApp");
