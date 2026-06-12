@@ -51,14 +51,16 @@ async function criarTabelas() {
 // ==========================================
 
 const client = new Client({
-  authStrategy: new LocalAuth(),
+  authStrategy: new LocalAuth({
+    clientId: "gerenciador-boletos"
+  }),
   puppeteer: {
     headless: true,
-    executablePath: process.env.RENDER ? '/usr/bin/google-chrome' : undefined,
+    executablePath: process.env.RENDER ? "/usr/bin/google-chrome" : undefined,
     args: [
-      '--no-sandbox',
-      '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage'
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-dev-shm-usage"
     ]
   }
 });
@@ -81,14 +83,17 @@ client.on("ready", () => {
 
 client.on("authenticated", () => {
   console.log("🔐 WhatsApp autenticado");
+  console.log("📂 Tentando salvar sessão...");
 });
 
 client.on("auth_failure", (msg) => {
-  console.log("❌ Falha na autenticação:", msg);
+  console.log("❌ AUTH FAILURE:");
+  console.log(msg);
 });
 
 client.on("disconnected", (reason) => {
-  console.log("🔌 WhatsApp desconectado:", reason);
+  console.log("🔌 WhatsApp desconectado:");
+  console.log("🔌 Motivo:", reason);
 });
 
 client.on("loading_screen", (percent, message) => {
