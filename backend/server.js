@@ -109,8 +109,22 @@ client.on("change_state", (state) => {
   console.log(`🔄 Estado: ${state}`);
 });
 
+client.on("message", (message) => {
+  console.log("📩 Mensagem recebida:", message.body);
+});
+
 client.on("remote_session_saved", () => {
   console.log("💾 Sessão salva");
+});
+
+process.on("uncaughtException", (err) => {
+  console.error("💥 UNCAUGHT EXCEPTION:");
+  console.error(err);
+});
+
+process.on("unhandledRejection", (err) => {
+  console.error("💥 UNHANDLED REJECTION:");
+  console.error(err);
 });
 
 console.log("🚀 Inicializando cliente WhatsApp");
@@ -132,7 +146,6 @@ setTimeout(() => {
   verificarEEnviarNotificacoes();
 }, 10000);
 */
-
 
 console.log("✅ Cliente WhatsApp criado");
 
