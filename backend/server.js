@@ -83,10 +83,7 @@ client.on("qr", (qr) => {
   console.log("👉 QR Code gerado no terminal.");
 });
 
-client.on("ready", () => {
-  ultimoQrCode = null; // Limpa o código quando conectar
-
-  console.log("✅ Conexão com o WhatsApp estabelecida com sucesso!");
+client.on("ready", async () => {
   console.log("🎉 READY DISPAROU!");
 });
 
@@ -114,7 +111,8 @@ client.on("change_state", (state) => {
 });
 
 client.on("message", (message) => {
-  console.log("📩 Mensagem recebida:", message.body);
+  console.log("📩 Tipo:", message.type);
+  console.log("📩 Conteúdo:", message.body);
 });
 
 client.on("remote_session_saved", () => {
@@ -134,22 +132,6 @@ process.on("unhandledRejection", (err) => {
 console.log("🚀 Inicializando cliente WhatsApp");
 
 client.initialize();
-
-/*
-setInterval(async () => {
-  try {
-    const state = await client.getState();
-    console.log("📱 Estado atual:", state);
-  } catch (err) {
-    console.log("❌ Erro ao obter estado:", err.message);
-  }
-}, 15000);
-
-setTimeout(() => {
-  console.log("🧪 Executando teste manual...");
-  verificarEEnviarNotificacoes();
-}, 10000);
-*/
 
 console.log("✅ Cliente WhatsApp criado");
 
