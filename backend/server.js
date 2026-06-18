@@ -56,14 +56,20 @@ const client = new Client({
   }),
   puppeteer: {
     headless: true,
-    executablePath: process.env.RENDER ? '/usr/bin/google-chrome' : undefined,
+    executablePath: process.env.RENDER
+      ? "/usr/bin/google-chrome"
+      : undefined,
     args: [
-      '--no-sandbox',
-      '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage',
-      '--disable-gpu',
-      '--single-process',
-      '--no-zygote'
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-dev-shm-usage",
+      "--disable-gpu",
+      "--disable-extensions",
+      "--disable-background-networking",
+      "--disable-background-timer-throttling",
+      "--disable-renderer-backgrounding",
+      "--single-process",
+      "--no-zygote"
     ]
   }
 });
