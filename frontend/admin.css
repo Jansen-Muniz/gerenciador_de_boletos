@@ -14,6 +14,26 @@ body {
   padding: 40px 20px;
 }
 
+.whatsapp-container {
+  padding: 20px;
+  border-radius: 8px;
+  background: #d2d2d3;
+  margin-bottom: 20px;
+}
+
+#status-whatsapp {
+  font-weight: bold;
+  font-size: 1.1em;
+}
+
+#qrcode {
+  display: none;
+  margin: 15px auto;
+  border: 10px solid white;
+  border-radius: 4px;
+  max-width: 250px;
+}
+
 .btn-logout {
   background: #d32f2f;
   color: white;

@@ -83,8 +83,8 @@ client.on("qr", (qr) => {
   console.log("👉 QR Code gerado no terminal.");
 });
 
-client.on("ready", async () => {
-  console.log("🎉 READY DISPAROU!");
+client.on("ready", () => {
+  console.log("✅ Conexão com o WhatsApp estabelecida com sucesso!");
 });
 
 client.on("authenticated", () => {
@@ -108,11 +108,6 @@ client.on("loading_screen", (percent, message) => {
 
 client.on("change_state", (state) => {
   console.log(`🔄 Estado: ${state}`);
-});
-
-client.on("message", (message) => {
-  console.log("📩 Tipo:", message.type);
-  console.log("📩 Conteúdo:", message.body);
 });
 
 client.on("remote_session_saved", () => {
@@ -406,6 +401,27 @@ app.get("/admin/qrcode", verificarLogin, (req, res) => {
       </div>
     `);
   });
+});
+
+app.get("/admin/whatsapp-status", verificarLogin, async (req, res) => {
+  try {
+    const state = await client.getState();
+
+    res.json({
+      conectado: state === "CONNECTED",
+      estado: state,
+      temQrCode: !!ultimoQrCode
+    });
+
+  } catch (err) {
+
+    res.json({
+      conectado: false,
+      estado: "DISCONNECTED",
+      temQrCode: !!ultimoQrCode
+    });
+
+  }
 });
 
 app.get("/boletos", verificarLogin, async (req, res) => {

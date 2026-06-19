@@ -8,9 +8,10 @@ async function carregarDadosAdmin() {
     console.log("Buscando dados de administração...");
 
     // 1. Busca os Usuários do Sistema
-    const resUsuarios = await fetch("/admin/usuarios", { credentials: "include" });
+    const resUsuarios = await fetch("/admin/usuarios", {
+      credentials: "include"
+    });
 
-    // Se o servidor responder que não está logado ou não é admin, chuta de volta pro login
     if (resUsuarios.status === 401 || resUsuarios.status === 403) {
       window.location.href = "login.html";
       return;
@@ -20,12 +21,45 @@ async function carregarDadosAdmin() {
     renderizarUsuarios(usuarios);
 
     // 2. Busca Todos os Boletos do Sistema
-    const resBoletos = await fetch("/admin/dashboard", { credentials: "include" });
+    const resBoletos = await fetch("/admin/dashboard", {
+      credentials: "include"
+    });
+
     const boletos = await resBoletos.json();
     renderizarBoletosAdmin(boletos);
 
+    // ==========================
+    // STATUS DO WHATSAPP
+    // ==========================
+    const resWhatsapp = await fetch(
+      "/admin/whatsapp-status",
+      {
+        credentials: "include"
+      }
+    );
+
+    const whatsapp = await resWhatsapp.json();
+
+    const statusWhatsapp =
+      document.getElementById("status-whatsapp");
+
+    if (whatsapp.conectado) {
+
+      statusWhatsapp.innerHTML =
+        "🟢 WhatsApp conectado";
+
+    } else {
+
+      statusWhatsapp.innerHTML =
+        `🔴 WhatsApp desconectado (${whatsapp.estado})`;
+
+    }
+
   } catch (erro) {
-    console.error("Erro ao carregar dados do painel admin:", erro);
+    console.error(
+      "Erro ao carregar dados do painel admin:",
+      erro
+    );
   }
 }
 
