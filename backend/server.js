@@ -1,5 +1,4 @@
 require("dotenv").config();
-const cors = require("cors");
 const express = require("express");
 const app = express();
 const db = require("./database");
@@ -8,7 +7,6 @@ const session = require("express-session");
 const bcrypt = require("bcrypt");
 const cron = require("node-cron"); // 👈 Adicionado para agendamento
 const { Client, LocalAuth } = require("whatsapp-web.js"); // 👈 Adicionado para WhatsApp
-const qrcode = require("qrcode-terminal"); // 👈 Adicionado para ver o QR Code
 const PgStore = require("connect-pg-simple")(session);
 
 async function criarTabelas() {
@@ -79,7 +77,6 @@ let ultimoQrCode = null;
 
 client.on("qr", (qr) => {
   ultimoQrCode = qr; // Salva o texto do QR Code aqui para a rota usar
-  qrcode.generate(qr, { small: true });
   console.log("👉 QR Code gerado no terminal.");
 });
 
@@ -106,14 +103,11 @@ client.on("loading_screen", (percent, message) => {
   console.log(`📱 Loading: ${percent}% - ${message}`);
 });
 
-client.on("change_state", (state) => {
-  console.log(`🔄 Estado: ${state}`);
-});
-
 client.on("remote_session_saved", () => {
   console.log("💾 Sessão salva");
 });
 
+/*
 process.on("uncaughtException", (err) => {
   console.error("💥 UNCAUGHT EXCEPTION:");
   console.error(err);
@@ -123,6 +117,7 @@ process.on("unhandledRejection", (err) => {
   console.error("💥 UNHANDLED REJECTION:");
   console.error(err);
 });
+*/
 
 console.log("🚀 Inicializando cliente WhatsApp");
 
@@ -175,7 +170,6 @@ async function criarAdminSeNaoExistir() {
 // 3. MIDDLEWARES E CONFIGURAÇÕES EXPRESS
 // ==========================================
 app.use(express.json());
-app.use(cors());
 
 app.use(session({
   store: new PgStore({
@@ -781,22 +775,4 @@ async function verificarEEnviarNotificacoes() {
 app.listen(PORT, () => {
   console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
   console.log("⏳ Aguardando 5 segundos para rodar um teste automático de notificações...");
-
-  // 🔄 Executa a checagem automaticamente 5 segundos após o servidor ligar
-  /*
-  setTimeout(() => {
-    if (client.info) {
-      console.log("🎯 WhatsApp está pronto! Iniciando varredura de teste...");
-      verificarEEnviarNotificacoes();
-    } else {
-      console.log("⚠️ WhatsApp ainda não conectou. O teste automático rodará assim que o QR Code for escaneado.");
-
-      // Fallback: Se o WhatsApp demorar a conectar, espera o evento 'ready'
-      client.once("ready", () => {
-        console.log("🎯 Conectado agora! Iniciando varredura de teste atrasada...");
-        verificarEEnviarNotificacoes();
-      });
-    }
-  }, 5000);
-*/
 });
