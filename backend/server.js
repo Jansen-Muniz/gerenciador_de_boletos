@@ -125,6 +125,14 @@ client.initialize();
 
 console.log("✅ Cliente WhatsApp criado");
 
+setInterval(() => {
+  const mem = process.memoryUsage();
+
+  console.log(
+    `🧠 RAM: ${Math.round(mem.rss / 1024 / 1024)} MB`
+  );
+}, 60000);
+
 async function criarAdminSeNaoExistir() {
 
   try {
