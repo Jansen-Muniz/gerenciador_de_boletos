@@ -448,6 +448,29 @@ app.get("/boletos", verificarLogin, async (req, res) => {
 
 });
 
+//rota temporária de teste
+
+app.get("/teste-whatsapp", async (req, res) => {
+  try {
+
+    const numero = "558988039351@c.us";
+
+    await client.sendMessage(
+      numero,
+      "🚀 Teste do Gerenciador de Boletos"
+    );
+
+    res.send("Mensagem enviada!");
+
+  } catch (erro) {
+
+    console.error(erro);
+
+    res.status(500).send(erro.message);
+
+  }
+});
+
 app.post("/boletos", verificarLogin, async (req, res) => {
 
   try {
