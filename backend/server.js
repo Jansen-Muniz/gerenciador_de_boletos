@@ -114,6 +114,32 @@ client.on("remote_session_saved", () => {
   console.log("💾 Sessão salva");
 });
 
+client.on("change_state", (state) => {
+  console.log("🔄 Estado alterado:", state);
+});
+
+client.on("authenticated", async () => {
+  console.log("🔐 WhatsApp autenticado");
+
+  try {
+    const state = await client.getState();
+    console.log("📱 Estado após autenticação:", state);
+  } catch (e) {
+    console.log(e);
+  }
+});
+
+client.on("ready", async () => {
+  console.log("✅ Conexão com o WhatsApp estabelecida com sucesso!");
+
+  try {
+    const state = await client.getState();
+    console.log("📱 Estado READY:", state);
+  } catch (e) {
+    console.log(e);
+  }
+});
+
 /*
 process.on("uncaughtException", (err) => {
   console.error("💥 UNCAUGHT EXCEPTION:");
@@ -417,9 +443,13 @@ app.get("/admin/qrcode", verificarLogin, (req, res) => {
   });
 });
 
-app.get("/admin/whatsapp-status", verificarLogin, async (req, res) => {
+app.get("/admin/whatsapp-status", async (req, res) => {
+
   try {
+
     const state = await client.getState();
+
+    console.log("📊 STATUS CONSULTADO:", state);
 
     res.json({
       conectado: state === "CONNECTED",
@@ -429,13 +459,16 @@ app.get("/admin/whatsapp-status", verificarLogin, async (req, res) => {
 
   } catch (err) {
 
+    console.log("❌ Erro getState:", err);
+
     res.json({
       conectado: false,
-      estado: "DISCONNECTED",
+      estado: "ERRO",
       temQrCode: !!ultimoQrCode
     });
 
   }
+
 });
 
 app.get("/boletos", verificarLogin, async (req, res) => {
