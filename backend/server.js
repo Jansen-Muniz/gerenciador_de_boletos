@@ -76,8 +76,19 @@ const client = new Client({
 let ultimoQrCode = null;
 
 client.on("qr", (qr) => {
-  ultimoQrCode = qr; // Salva o texto do QR Code aqui para a rota usar
+  ultimoQrCode = qr;
   console.log("👉 QR Code gerado no terminal.");
+});
+
+client.on("authenticated", async () => {
+  console.log("🔐 WhatsApp autenticado");
+
+  try {
+    const state = await client.getState();
+    console.log("📱 Estado após autenticação:", state);
+  } catch (e) {
+    console.log("❌ Erro ao obter estado:", e);
+  }
 });
 
 client.on("ready", async () => {
@@ -85,15 +96,14 @@ client.on("ready", async () => {
 
   try {
     const state = await client.getState();
-    console.log("📱 Estado:", state);
+    console.log("📱 Estado READY:", state);
   } catch (e) {
     console.log("❌ Erro ao obter estado:", e);
   }
 });
 
-client.on("authenticated", () => {
-  console.log("🔐 WhatsApp autenticado");
-  console.log("📂 Tentando salvar sessão...");
+client.on("change_state", (state) => {
+  console.log("🔄 Novo estado:", state);
 });
 
 client.on("auth_failure", (msg) => {
@@ -112,32 +122,6 @@ client.on("loading_screen", (percent, message) => {
 
 client.on("remote_session_saved", () => {
   console.log("💾 Sessão salva");
-});
-
-client.on("change_state", (state) => {
-  console.log("🔄 Estado alterado:", state);
-});
-
-client.on("authenticated", async () => {
-  console.log("🔐 WhatsApp autenticado");
-
-  try {
-    const state = await client.getState();
-    console.log("📱 Estado após autenticação:", state);
-  } catch (e) {
-    console.log(e);
-  }
-});
-
-client.on("ready", async () => {
-  console.log("✅ Conexão com o WhatsApp estabelecida com sucesso!");
-
-  try {
-    const state = await client.getState();
-    console.log("📱 Estado READY:", state);
-  } catch (e) {
-    console.log(e);
-  }
 });
 
 /*
