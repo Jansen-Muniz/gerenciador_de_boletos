@@ -129,9 +129,14 @@ setInterval(() => {
   const mem = process.memoryUsage();
 
   console.log(
-    `🧠 RAM: ${Math.round(mem.rss / 1024 / 1024)} MB`
+    `🧠 RSS: ${Math.round(mem.rss / 1024 / 1024)} MB`
   );
-}, 60000);
+
+  console.log(
+    `🧠 HeapUsed: ${Math.round(mem.heapUsed / 1024 / 1024)} MB`
+  );
+
+}, 10000);
 
 async function criarAdminSeNaoExistir() {
 
