@@ -80,8 +80,15 @@ client.on("qr", (qr) => {
   console.log("👉 QR Code gerado no terminal.");
 });
 
-client.on("ready", () => {
+client.on("ready", async () => {
   console.log("✅ Conexão com o WhatsApp estabelecida com sucesso!");
+
+  try {
+    const state = await client.getState();
+    console.log("📱 Estado:", state);
+  } catch (e) {
+    console.log("❌ Erro ao obter estado:", e);
+  }
 });
 
 client.on("authenticated", () => {
