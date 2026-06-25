@@ -66,7 +66,6 @@ const client = new Client({
       "--disable-background-networking",
       "--disable-background-timer-throttling",
       "--disable-renderer-backgrounding",
-      "--single-process",
       "--no-zygote"
     ]
   }
