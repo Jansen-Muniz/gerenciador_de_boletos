@@ -141,7 +141,26 @@ client.initialize();
 
 console.log("✅ Cliente WhatsApp criado");
 
+// 👇 NOVO MONITOR DO ESTADO DO WHATSAPP
+setInterval(async () => {
+
+  try {
+
+    const state = await client.getState();
+
+    console.log("📡 Estado atual:", state);
+
+  } catch (e) {
+
+    console.log("📡 Estado atual: ainda indisponível");
+
+  }
+
+}, 5000);
+
+// 👇 Monitor de memória
 setInterval(() => {
+
   const mem = process.memoryUsage();
 
   console.log(
