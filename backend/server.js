@@ -1,4 +1,5 @@
 require("dotenv").config();
+const { exec } = require("child_process");
 const express = require("express");
 const app = express();
 const db = require("./database");
@@ -172,6 +173,26 @@ setInterval(() => {
   );
 
 }, 10000);
+
+setInterval(() => {
+
+  exec(
+    "ps -eo pid,ppid,%mem,rss,comm,args | grep -E 'chrome|chromium|node' | grep -v grep",
+    (err, stdout) => {
+
+      if (err) {
+        console.log("⚠️ Não foi possível listar os processos.");
+        return;
+      }
+
+      console.log("========== PROCESSOS ==========");
+      console.log(stdout);
+      console.log("===============================");
+
+    }
+  );
+
+}, 15000);
 
 async function criarAdminSeNaoExistir() {
 
