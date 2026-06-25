@@ -177,7 +177,7 @@ setInterval(() => {
 setInterval(() => {
 
   exec(
-    "ps -eo pid,ppid,%mem,rss,comm,args | grep -E 'chrome|chromium|node' | grep -v grep",
+    "ps -eo pid,rss,comm | grep -E 'chrome|chromium|node' | grep -v grep",
     (err, stdout) => {
 
       if (err) {
