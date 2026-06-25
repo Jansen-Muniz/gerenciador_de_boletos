@@ -67,6 +67,15 @@ const client = new Client({
       "--disable-background-networking",
       "--disable-background-timer-throttling",
       "--disable-renderer-backgrounding",
+      "--disable-backgrounding-occluded-windows",
+      "--disable-sync",
+      "--disable-default-apps",
+      "--disable-features=Translate,BackForwardCache,OptimizationHints",
+      "--disable-component-update",
+      "--mute-audio",
+      "--no-first-run",
+      "--no-default-browser-check",
+      "--single-process",
       "--no-zygote"
     ]
   }
