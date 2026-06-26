@@ -151,57 +151,43 @@ client.initialize();
 
 console.log("✅ Cliente WhatsApp criado");
 
-// 👇 NOVO MONITOR DO ESTADO DO WHATSAPP
 setInterval(async () => {
+
+  console.log("\n================ MONITOR ================\n");
+
+  const mem = process.memoryUsage();
+
+  console.log(`🧠 RSS: ${Math.round(mem.rss / 1024 / 1024)} MB`);
+  console.log(`🧠 HeapUsed: ${Math.round(mem.heapUsed / 1024 / 1024)} MB`);
 
   try {
 
     const state = await client.getState();
+    console.log(`📡 Estado: ${state}`);
 
-    console.log("📡 Estado atual:", state);
+  } catch {
 
-  } catch (e) {
-
-    console.log("📡 Estado atual: ainda indisponível");
+    console.log("📡 Estado: ainda indisponível");
 
   }
-
-}, 5000);
-
-// 👇 Monitor de memória
-setInterval(() => {
-
-  const mem = process.memoryUsage();
-
-  console.log(
-    `🧠 RSS: ${Math.round(mem.rss / 1024 / 1024)} MB`
-  );
-
-  console.log(
-    `🧠 HeapUsed: ${Math.round(mem.heapUsed / 1024 / 1024)} MB`
-  );
-
-}, 10000);
-
-setInterval(() => {
 
   exec(
     "ps -eo pid,ppid,rss,%mem,args --sort=-rss",
     (err, stdout) => {
 
       if (err) {
-        console.log(err);
+        console.log("Erro no ps:", err.message);
         return;
       }
 
-      console.log("========== MEMÓRIA DOS PROCESSOS ==========");
+      console.log("========== PROCESSOS ==========");
       console.log(stdout);
-      console.log("===========================================");
+      console.log("===============================");
 
     }
   );
 
-}, 15000);
+}, 5000);
 
 async function criarAdminSeNaoExistir() {
 
