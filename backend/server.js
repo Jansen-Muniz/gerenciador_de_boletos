@@ -236,6 +236,7 @@ async function iniciarSistema() {
 
     } catch (erro) {
 
+      console.error("❌ Erro ao inicializar o WhatsApp:");
       console.error(erro);
 
     }
@@ -882,22 +883,3 @@ async function verificarEEnviarNotificacoes() {
   }
 }
 
-app.listen(PORT, async () => {
-
-  console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
-  console.log("⏳ Inicializando WhatsApp...");
-
-  try {
-
-    await client.initialize();
-
-    console.log("✅ Cliente WhatsApp inicializado");
-
-  } catch (erro) {
-
-    console.error("❌ Erro ao inicializar o WhatsApp:");
-    console.error(erro);
-
-  }
-
-});
