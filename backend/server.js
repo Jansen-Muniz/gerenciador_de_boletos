@@ -186,17 +186,17 @@ setInterval(() => {
 setInterval(() => {
 
   exec(
-    "ps -eo pid,rss,comm | grep -E 'chrome|chromium|node' | grep -v grep",
+    "ps -eo pid,ppid,rss,%mem,args --sort=-rss",
     (err, stdout) => {
 
       if (err) {
-        console.log("⚠️ Não foi possível listar os processos.");
+        console.log(err);
         return;
       }
 
-      console.log("========== PROCESSOS ==========");
+      console.log("========== MEMÓRIA DOS PROCESSOS ==========");
       console.log(stdout);
-      console.log("===============================");
+      console.log("===========================================");
 
     }
   );
