@@ -145,12 +145,6 @@ process.on("unhandledRejection", (err) => {
 });
 */
 
-console.log("🚀 Inicializando cliente WhatsApp");
-
-client.initialize();
-
-console.log("✅ Cliente WhatsApp criado");
-
 setInterval(async () => {
 
   console.log("\n================ MONITOR ================\n");
@@ -222,13 +216,35 @@ async function criarAdminSeNaoExistir() {
 
 }
 
-(async () => {
+async function iniciarSistema() {
 
   await criarTabelas();
 
   await criarAdminSeNaoExistir();
 
-})();
+  app.listen(PORT, async () => {
+
+    console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
+
+    console.log("⏳ Inicializando WhatsApp...");
+
+    try {
+
+      await client.initialize();
+
+      console.log("✅ Cliente WhatsApp inicializado");
+
+    } catch (erro) {
+
+      console.error(erro);
+
+    }
+
+  });
+
+}
+
+iniciarSistema();
 
 // ==========================================
 // 3. MIDDLEWARES E CONFIGURAÇÕES EXPRESS
@@ -866,7 +882,22 @@ async function verificarEEnviarNotificacoes() {
   }
 }
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
+
   console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
-  console.log("⏳ Aguardando 5 segundos para rodar um teste automático de notificações...");
+  console.log("⏳ Inicializando WhatsApp...");
+
+  try {
+
+    await client.initialize();
+
+    console.log("✅ Cliente WhatsApp inicializado");
+
+  } catch (erro) {
+
+    console.error("❌ Erro ao inicializar o WhatsApp:");
+    console.error(erro);
+
+  }
+
 });
