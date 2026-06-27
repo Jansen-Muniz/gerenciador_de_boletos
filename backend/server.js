@@ -81,6 +81,8 @@ const client = new Client({
   }
 });
 
+let browserMonitor = null;
+
 // Variável global para guardar o último código gerado
 let ultimoQrCode = null;
 
@@ -101,14 +103,46 @@ client.on("authenticated", async () => {
 });
 
 client.on("ready", async () => {
+
   console.log("✅ Conexão com o WhatsApp estabelecida com sucesso!");
 
   try {
+
     const state = await client.getState();
     console.log("📱 Estado READY:", state);
+
+    browserMonitor = client.pupBrowser;
+
+    if (browserMonitor) {
+
+      console.log("🌐 Browser encontrado!");
+
+      browserMonitor.on("disconnected", () => {
+        console.log("💥 BROWSER DISCONNECTED");
+      });
+
+      const proc = browserMonitor.process();
+
+      if (proc) {
+
+        proc.on("exit", (code, signal) => {
+
+          console.log("💀 CHROME FINALIZADO");
+          console.log("Código:", code);
+          console.log("Signal:", signal);
+
+        });
+
+      }
+
+    }
+
   } catch (e) {
+
     console.log("❌ Erro ao obter estado:", e);
+
   }
+
 });
 
 client.on("change_state", (state) => {
