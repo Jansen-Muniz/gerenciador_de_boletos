@@ -179,43 +179,35 @@ process.on("unhandledRejection", (err) => {
 });
 */
 
+const START = Date.now();
+
+console.log(`🚀 Processo iniciado: ${START}`);
+
 setInterval(async () => {
 
-  console.log("\n================ MONITOR ================\n");
+  console.log("\n========== MONITOR ==========");
 
   const mem = process.memoryUsage();
 
   console.log(`🧠 RSS: ${Math.round(mem.rss / 1024 / 1024)} MB`);
   console.log(`🧠 HeapUsed: ${Math.round(mem.heapUsed / 1024 / 1024)} MB`);
+  console.log(`🆔 Processo: ${START}`);
 
   try {
 
     const state = await client.getState();
+
     console.log(`📡 Estado: ${state}`);
 
-  } catch {
+  } catch (e) {
 
-    console.log("📡 Estado: ainda indisponível");
+    console.log("📡 Estado: indisponível");
 
   }
 
-  exec(
-    "ps -eo pid,ppid,rss,%mem,args --sort=-rss",
-    (err, stdout) => {
+  console.log("=============================\n");
 
-      if (err) {
-        console.log("Erro no ps:", err.message);
-        return;
-      }
-
-      console.log("========== PROCESSOS ==========");
-      console.log(stdout);
-      console.log("===============================");
-
-    }
-  );
-
-}, 5000);
+}, 60000);
 
 async function criarAdminSeNaoExistir() {
 
@@ -565,7 +557,16 @@ app.get("/boletos", verificarLogin, async (req, res) => {
 //rota temporária de teste
 
 app.get("/teste-whatsapp", async (req, res) => {
+
   try {
+
+    const state = await client.getState();
+
+    console.log("📡 Estado antes do envio:", state);
+
+    if (state !== "CONNECTED") {
+      return res.send(`WhatsApp não está pronto (${state})`);
+    }
 
     const numero = "558988039351@c.us";
 
@@ -583,6 +584,7 @@ app.get("/teste-whatsapp", async (req, res) => {
     res.status(500).send(erro.message);
 
   }
+
 });
 
 app.post("/boletos", verificarLogin, async (req, res) => {
