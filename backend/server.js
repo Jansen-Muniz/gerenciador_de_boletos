@@ -1,5 +1,5 @@
 require("dotenv").config();
-const { exec } = require("child_process");
+const PORT = process.env.PORT || 3000;
 const express = require("express");
 const app = express();
 const db = require("./database");
@@ -54,34 +54,42 @@ const client = new Client({
     clientId: "gerenciador-boletos"
   }),
   puppeteer: {
-    headless: true,
+    headless: process.env.RENDER ? "new" : true,
+
     executablePath: process.env.RENDER
       ? "/usr/bin/google-chrome"
       : undefined,
+
     args: [
+
       "--no-sandbox",
       "--disable-setuid-sandbox",
+
       "--disable-dev-shm-usage",
+
       "--disable-gpu",
+
       "--disable-extensions",
-      "--disable-background-networking",
-      "--disable-background-timer-throttling",
-      "--disable-renderer-backgrounding",
-      "--disable-backgrounding-occluded-windows",
+
       "--disable-sync",
+
+      "--disable-background-networking",
+
       "--disable-default-apps",
-      "--disable-features=Translate,BackForwardCache,OptimizationHints",
-      "--disable-component-update",
+
       "--mute-audio",
+
       "--no-first-run",
+
       "--no-default-browser-check",
-      "--single-process",
-      "--no-zygote"
+
+      "--disable-features=Translate",
+
+      "--js-flags=--max-old-space-size=128"
+
     ]
   }
 });
-
-let browserMonitor = null;
 
 // Variável global para guardar o último código gerado
 let ultimoQrCode = null;
@@ -109,33 +117,8 @@ client.on("ready", async () => {
   try {
 
     const state = await client.getState();
+
     console.log("📱 Estado READY:", state);
-
-    browserMonitor = client.pupBrowser;
-
-    if (browserMonitor) {
-
-      console.log("🌐 Browser encontrado!");
-
-      browserMonitor.on("disconnected", () => {
-        console.log("💥 BROWSER DISCONNECTED");
-      });
-
-      const proc = browserMonitor.process();
-
-      if (proc) {
-
-        proc.on("exit", (code, signal) => {
-
-          console.log("💀 CHROME FINALIZADO");
-          console.log("Código:", code);
-          console.log("Signal:", signal);
-
-        });
-
-      }
-
-    }
 
   } catch (e) {
 
@@ -296,8 +279,6 @@ app.use(session({
 }));
 
 app.use(express.static(path.join(__dirname, "../frontend")));
-
-const PORT = process.env.PORT || 3000;
 
 function verificarLogin(req, res, next) {
   if (!req.session || !req.session.usuario) {
