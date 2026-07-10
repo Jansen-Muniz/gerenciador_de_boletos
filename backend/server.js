@@ -64,40 +64,17 @@ const client = new Client({
   authStrategy: new LocalAuth({
     clientId: "gerenciador-boletos"
   }),
-  puppeteer: {
-    headless: process.env.RENDER ? "new" : true,
 
+  puppeteer: {
+    headless: true,
     executablePath: process.env.RENDER
       ? "/usr/bin/google-chrome"
       : undefined,
-
     args: [
-
       "--no-sandbox",
       "--disable-setuid-sandbox",
-
       "--disable-dev-shm-usage",
-
-      "--disable-gpu",
-
-      "--disable-extensions",
-
-      "--disable-sync",
-
-      "--disable-background-networking",
-
-      "--disable-default-apps",
-
-      "--mute-audio",
-
-      "--no-first-run",
-
-      "--no-default-browser-check",
-
-      "--disable-features=Translate",
-
-      "--js-flags=--max-old-space-size=128"
-
+      "--disable-gpu"
     ]
   }
 });
@@ -111,10 +88,11 @@ let ultimoQrCode = null;
 client.on("qr", (qr) => {
 
   ultimoQrCode = qr;
-
+  whatsappReady = false;
   whatsappState = "QR_CODE";
 
   console.log("👉 QR Code gerado.");
+  console.log("🟢 EVENTO QR");
 
 });
 
@@ -123,94 +101,9 @@ client.on("authenticated", () => {
   whatsappState = "AUTHENTICATED";
 
   console.log("🔐 WhatsApp autenticado");
+  console.log("🟢 EVENTO AUTHENTICATED");
 
 });
-
-client.on("ready", () => {
-
-  whatsappReady = true;
-  whatsappState = "CONNECTED";
-  ultimoQrCode = null;
-
-  console.log("✅ WhatsApp pronto!");
-
-});
-
-client.on("change_state", (state) => {
-
-  whatsappState = state;
-
-  console.log("🔄 Novo estado:", state);
-
-});
-
-client.on("disconnected", (reason) => {
-
-  whatsappReady = false;
-  whatsappState = "DISCONNECTED";
-
-  console.log("🔌 WhatsApp desconectado");
-  console.log(reason);
-
-});
-
-client.on("auth_failure", (msg) => {
-
-  whatsappReady = false;
-  whatsappState = "AUTH_FAILURE";
-
-  console.log(msg);
-
-});
-
-/*
-client.on("authenticated", async () => {
-  console.log("🔐 WhatsApp autenticado");
-
-  try {
-    const state = await client.getState();
-    console.log("📱 Estado após autenticação:", state);
-  } catch (e) {
-    console.log("❌ Erro ao obter estado:", e);
-  }
-});
-
-client.on("ready", async () => {
-
-  console.log("✅ Conexão com o WhatsApp estabelecida com sucesso!");
-
-  try {
-
-    const state = await client.getState();
-
-    console.log("📱 Estado READY:", state);
-
-  } catch (e) {
-
-    console.log("❌ Erro ao obter estado:", e);
-
-  }
-
-});
-
-client.on("change_state", (state) => {
-  console.log("🔄 Novo estado:", state);
-});
-
-client.on("disconnected", (reason) => {
-  console.log("🔌 WhatsApp desconectado:");
-  console.log("🔌 Motivo:", reason);
-});
-
-client.on("auth_failure", (msg) => {
-  console.log("❌ AUTH FAILURE:");
-  console.log(msg);
-});
-
-client.on("loading_screen", (percent, message) => {
-  console.log(`📱 Loading: ${percent}% - ${message}`);
-});
-*/
 
 client.on("loading_screen", (percent, message) => {
 
@@ -221,6 +114,45 @@ client.on("loading_screen", (percent, message) => {
   }
 
   console.log(`📱 ${percent}% - ${message}`);
+  console.log(`🟢 LOADING ${percent}%`);
+
+});
+
+client.on("change_state", (state) => {
+
+  whatsappState = state;
+
+  console.log("🔄 Novo estado:", state);
+  console.log("🟢 CHANGE_STATE:", state);
+
+});
+
+client.on("ready", async () => {
+
+  whatsappReady = true;
+  whatsappState = "CONNECTED";
+  ultimoQrCode = null;
+
+  console.log("✅ WhatsApp pronto!");
+  console.log("🟢 EVENTO READY");
+
+  try {
+
+    const state = await client.getState();
+
+    console.log("📡 Estado interno:", state);
+
+  } catch (e) {
+
+    console.log("❌ Erro ao consultar getState()", e);
+
+  }
+
+});
+
+client.on("message", () => {
+
+  console.log("📩 EVENTO MESSAGE");
 
 });
 
@@ -229,61 +161,29 @@ client.on("remote_session_saved", () => {
   whatsappState = "SESSION_SAVED";
 
   console.log("💾 Sessão salva");
+  console.log("🟢 EVENTO REMOTE_SESSION_SAVED");
 
 });
 
-function log(tipo, mensagem) {
+client.on("auth_failure", (msg) => {
 
-  console.log(
-    `[${new Date().toLocaleTimeString("pt-BR")}] ${tipo} ${mensagem}`
-  );
+  whatsappReady = false;
+  whatsappState = "AUTH_FAILURE";
 
-}
+  console.log("❌ AUTH FAILURE");
+  console.log(msg);
 
-log("INFO", "Servidor iniciado");
-
-/*
-process.on("uncaughtException", (err) => {
-  console.error("💥 UNCAUGHT EXCEPTION:");
-  console.error(err);
 });
 
-process.on("unhandledRejection", (err) => {
-  console.error("💥 UNHANDLED REJECTION:");
-  console.error(err);
+client.on("disconnected", (reason) => {
+
+  whatsappReady = false;
+  whatsappState = "DISCONNECTED";
+
+  console.log("🔌 WhatsApp desconectado");
+  console.log("🟢 DISCONNECTED:", reason);
+
 });
-
-const START = Date.now();
-
-console.log(`🚀 Processo iniciado: ${START}`);
-
-setInterval(async () => {
-
-  console.log("\n========== MONITOR ==========");
-
-  const mem = process.memoryUsage();
-
-  console.log(`🧠 RSS: ${Math.round(mem.rss / 1024 / 1024)} MB`);
-  console.log(`🧠 HeapUsed: ${Math.round(mem.heapUsed / 1024 / 1024)} MB`);
-  console.log(`🆔 Processo: ${START}`);
-
-  try {
-
-    const state = await client.getState();
-
-    console.log(`📡 Estado: ${state}`);
-
-  } catch (e) {
-
-    console.log("📡 Estado: indisponível");
-
-  }
-
-  console.log("=============================\n");
-
-}, 60000);
-
-*/
 
 async function criarAdminSeNaoExistir() {
 
@@ -676,6 +576,8 @@ app.get("/boletos", verificarLogin, async (req, res) => {
 //rota temporária de teste
 
 app.get("/teste-whatsapp", async (req, res) => {
+  console.log("Estado:", whatsappState);
+  console.log("Ready:", whatsappReady);
 
   try {
 
