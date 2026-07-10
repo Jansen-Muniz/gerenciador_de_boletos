@@ -91,14 +91,68 @@ const client = new Client({
   }
 });
 
+let whatsappReady = false;
+let whatsappState = "STARTING";
+
 // Variável global para guardar o último código gerado
 let ultimoQrCode = null;
 
 client.on("qr", (qr) => {
+
   ultimoQrCode = qr;
-  console.log("👉 QR Code gerado no terminal.");
+
+  whatsappState = "QR_CODE";
+
+  console.log("👉 QR Code gerado.");
+
 });
 
+client.on("authenticated", () => {
+
+  whatsappState = "AUTHENTICATED";
+
+  console.log("🔐 WhatsApp autenticado");
+
+});
+
+client.on("ready", () => {
+
+  whatsappReady = true;
+  whatsappState = "CONNECTED";
+  ultimoQrCode = null;
+
+  console.log("✅ WhatsApp pronto!");
+
+});
+
+client.on("change_state", (state) => {
+
+  whatsappState = state;
+
+  console.log("🔄 Novo estado:", state);
+
+});
+
+client.on("disconnected", (reason) => {
+
+  whatsappReady = false;
+  whatsappState = "DISCONNECTED";
+
+  console.log("🔌 WhatsApp desconectado");
+  console.log(reason);
+
+});
+
+client.on("auth_failure", (msg) => {
+
+  whatsappReady = false;
+  whatsappState = "AUTH_FAILURE";
+
+  console.log(msg);
+
+});
+
+/*
 client.on("authenticated", async () => {
   console.log("🔐 WhatsApp autenticado");
 
@@ -132,23 +186,46 @@ client.on("change_state", (state) => {
   console.log("🔄 Novo estado:", state);
 });
 
-client.on("auth_failure", (msg) => {
-  console.log("❌ AUTH FAILURE:");
-  console.log(msg);
-});
-
 client.on("disconnected", (reason) => {
   console.log("🔌 WhatsApp desconectado:");
   console.log("🔌 Motivo:", reason);
 });
 
+client.on("auth_failure", (msg) => {
+  console.log("❌ AUTH FAILURE:");
+  console.log(msg);
+});
+
 client.on("loading_screen", (percent, message) => {
   console.log(`📱 Loading: ${percent}% - ${message}`);
 });
+*/
+
+client.on("loading_screen", (percent, message) => {
+
+  whatsappState = `LOADING ${percent}%`;
+
+  console.log(`📱 ${percent}% - ${message}`);
+
+});
 
 client.on("remote_session_saved", () => {
+
+  whatsappState = "SESSION_SAVED";
+
   console.log("💾 Sessão salva");
+
 });
+
+function log(tipo, mensagem) {
+
+  console.log(
+    `[${new Date().toLocaleTimeString("pt-BR")}] ${tipo} ${mensagem}`
+  );
+
+}
+
+log("INFO", "Servidor iniciado");
 
 /*
 process.on("uncaughtException", (err) => {
@@ -160,7 +237,6 @@ process.on("unhandledRejection", (err) => {
   console.error("💥 UNHANDLED REJECTION:");
   console.error(err);
 });
-*/
 
 const START = Date.now();
 
@@ -191,6 +267,8 @@ setInterval(async () => {
   console.log("=============================\n");
 
 }, 60000);
+
+*/
 
 async function criarAdminSeNaoExistir() {
 
@@ -251,6 +329,39 @@ async function iniciarSistema() {
     }
 
   });
+
+}
+const START = Date.now();
+
+setInterval(() => {
+
+  console.log("\n================ MONITOR ================");
+
+  const mem = process.memoryUsage();
+
+  console.log(`🆔 PID............. ${process.pid}`);
+
+  console.log(`⏱ Uptime......... ${Math.floor(process.uptime())} s`);
+
+  console.log(`🧠 RSS............ ${Math.round(mem.rss / 1024 / 1024)} MB`);
+
+  console.log(`🧠 Heap........... ${Math.round(mem.heapUsed / 1024 / 1024)} MB`);
+
+  console.log(`📱 WhatsApp....... ${whatsappState}`);
+
+  console.log(`✅ Ready.......... ${whatsappReady}`);
+
+  console.log("=========================================\n");
+
+}, 60000);
+
+async function enviarMensagem(numero, mensagem) {
+
+  if (!whatsappReady) {
+    throw new Error("WhatsApp indisponível.");
+  }
+
+  return await client.sendMessage(numero, mensagem);
 
 }
 
@@ -487,29 +598,41 @@ app.get("/admin/qrcode", verificarLogin, (req, res) => {
 
 app.get("/admin/whatsapp-status", async (req, res) => {
 
+  res.json({
+
+    conectado: whatsappReady,
+
+    estado: whatsappState,
+
+    temQrCode: !!ultimoQrCode
+
+  });
+
+  /*
   try {
-
+ 
     const state = await client.getState();
-
+ 
     console.log("📊 STATUS CONSULTADO:", state);
-
+ 
     res.json({
       conectado: state === "CONNECTED",
       estado: state,
       temQrCode: !!ultimoQrCode
     });
-
+ 
   } catch (err) {
-
+ 
     console.log("❌ Erro getState:", err);
-
+ 
     res.json({
       conectado: false,
       estado: "ERRO",
       temQrCode: !!ultimoQrCode
     });
-
+ 
   }
+  */
 
 });
 
@@ -541,17 +664,13 @@ app.get("/teste-whatsapp", async (req, res) => {
 
   try {
 
-    const state = await client.getState();
-
-    console.log("📡 Estado antes do envio:", state);
-
-    if (state !== "CONNECTED") {
-      return res.send(`WhatsApp não está pronto (${state})`);
+    if (!whatsappReady) {
+      return res.send("WhatsApp ainda não está pronto.");
     }
 
     const numero = "558988039351@c.us";
 
-    await client.sendMessage(
+    await enviarMensagem(
       numero,
       "🚀 Teste do Gerenciador de Boletos"
     );
@@ -715,6 +834,15 @@ cron.schedule("0 8 * * *", () => {
 async function verificarEEnviarNotificacoes() {
   console.log("⏰ Iniciando checagem diária de boletos para o WhatsApp...");
 
+  if (!whatsappReady) {
+
+    console.log("⚠️ WhatsApp indisponível.");
+
+    return;
+
+  }
+
+  /*
   try {
     const estado = await client.getState();
 
@@ -730,6 +858,7 @@ async function verificarEEnviarNotificacoes() {
     );
     return;
   }
+  */
 
   const query = `
     SELECT boletos.id, boletos.nome, boletos.valor, boletos.vencimento, usuarios.telefone 
@@ -843,7 +972,7 @@ async function verificarEEnviarNotificacoes() {
 
           if (idCadastrado) {
 
-            await client.sendMessage(
+            await enviarMensagem(
               idCadastrado._serialized,
               mensagem
             );
