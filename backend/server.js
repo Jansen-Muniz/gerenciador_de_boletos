@@ -35,11 +35,22 @@ async function criarTabelas() {
       )
     `);
 
-    console.log("✅ Tabelas criadas/verificadas");
+    // Índices para melhorar as consultas
+    await db.query(`
+      CREATE INDEX IF NOT EXISTS idx_boletos_usuario
+      ON boletos(usuario)
+    `);
+
+    await db.query(`
+      CREATE INDEX IF NOT EXISTS idx_boletos_vencimento
+      ON boletos(vencimento)
+    `);
+
+    console.log("✅ Tabelas e índices criados/verificados");
 
   } catch (erro) {
 
-    console.error("Erro ao criar tabelas:", erro);
+    console.error("❌ Erro ao criar tabelas:", erro);
 
   }
 
@@ -204,6 +215,10 @@ client.on("loading_screen", (percent, message) => {
 client.on("loading_screen", (percent, message) => {
 
   whatsappState = `LOADING ${percent}%`;
+
+  if (percent === 100) {
+    ultimoQrCode = null;
+  }
 
   console.log(`📱 ${percent}% - ${message}`);
 
