@@ -67,15 +67,29 @@ const client = new Client({
 
   puppeteer: {
     headless: true,
+
     executablePath: process.env.RENDER
       ? "/usr/bin/google-chrome"
       : undefined,
+
     args: [
       "--no-sandbox",
       "--disable-setuid-sandbox",
       "--disable-dev-shm-usage",
-      "--disable-gpu"
-    ]
+      "--disable-gpu",
+      "--disable-extensions",
+      "--disable-background-networking",
+      "--disable-background-timer-throttling",
+      "--disable-renderer-backgrounding",
+      "--disable-features=Translate",
+      "--window-size=1280,720"
+    ],
+
+    defaultViewport: null
+  },
+
+  webVersionCache: {
+    type: "local"
   }
 });
 
@@ -93,15 +107,6 @@ client.on("qr", (qr) => {
 
   console.log("👉 QR Code gerado.");
   console.log("🟢 EVENTO QR");
-
-});
-
-client.on("authenticated", () => {
-
-  whatsappState = "AUTHENTICATED";
-
-  console.log("🔐 WhatsApp autenticado");
-  console.log("🟢 EVENTO AUTHENTICATED");
 
 });
 
@@ -185,6 +190,28 @@ client.on("disconnected", (reason) => {
 
 });
 
+client.on("change_battery", battery => {
+  console.log("🔋 BATTERY:", battery);
+});
+
+client.on("authenticated", async () => {
+
+  whatsappState = "AUTHENTICATED";
+
+  console.log("🔐 WhatsApp autenticado");
+  console.log("🟢 EVENTO AUTHENTICATED");
+
+  try {
+
+    console.log("📱 Client info:", await client.info);
+
+  } catch {
+
+    console.log("📱 Client info ainda indisponível");
+
+  }
+
+});
 async function criarAdminSeNaoExistir() {
 
   try {
@@ -235,6 +262,22 @@ async function iniciarSistema() {
       await client.initialize();
 
       console.log("✅ Cliente WhatsApp inicializado");
+
+      setInterval(async () => {
+
+        try {
+
+          const state = await client.getState();
+
+          console.log("📡 getState():", state);
+
+        } catch (e) {
+
+          console.log("❌ getState():", e.message);
+
+        }
+
+      }, 10000);
 
     } catch (erro) {
 
