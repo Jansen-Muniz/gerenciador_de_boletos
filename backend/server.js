@@ -51,9 +51,7 @@ async function criarTabelas() {
   } catch (erro) {
 
     console.error("❌ Erro ao criar tabelas:", erro);
-
   }
-
 }
 
 // ==========================================
@@ -107,7 +105,6 @@ client.on("qr", (qr) => {
 
   console.log("👉 QR Code gerado.");
   console.log("🟢 EVENTO QR");
-
 });
 
 client.on("loading_screen", (percent, message) => {
@@ -120,7 +117,6 @@ client.on("loading_screen", (percent, message) => {
 
   console.log(`📱 ${percent}% - ${message}`);
   console.log(`🟢 LOADING ${percent}%`);
-
 });
 
 client.on("change_state", (state) => {
@@ -129,7 +125,6 @@ client.on("change_state", (state) => {
 
   console.log("🔄 Novo estado:", state);
   console.log("🟢 CHANGE_STATE:", state);
-
 });
 
 client.on("ready", async () => {
@@ -141,19 +136,12 @@ client.on("ready", async () => {
   console.log("✅ WhatsApp pronto!");
 });
 
-client.on("message", () => {
-
-  console.log("📩 EVENTO MESSAGE");
-
-});
-
 client.on("remote_session_saved", () => {
 
   whatsappState = "SESSION_SAVED";
 
   console.log("💾 Sessão salva");
   console.log("🟢 EVENTO REMOTE_SESSION_SAVED");
-
 });
 
 client.on("auth_failure", (msg) => {
@@ -163,7 +151,6 @@ client.on("auth_failure", (msg) => {
 
   console.log("❌ AUTH FAILURE");
   console.log(msg);
-
 });
 
 client.on("disconnected", (reason) => {
@@ -176,30 +163,19 @@ client.on("disconnected", (reason) => {
 
 });
 
-client.on("authenticated", async () => {
+client.on("authenticated", () => {
 
   whatsappState = "AUTHENTICATED";
 
   console.log("🔐 WhatsApp autenticado");
-  console.log("🟢 EVENTO AUTHENTICATED");
-
-  try {
-
-    console.log("📱 Client info:", client.info);
-
-  } catch {
-
-    console.log("📱 Client info ainda indisponível");
-
-  }
 
 });
+
 async function criarAdminSeNaoExistir() {
 
   try {
 
     const senhaHash = bcrypt.hashSync("123456", 10);
-
     const resultado = await db.query(
       "SELECT * FROM usuarios WHERE usuario = $1",
       ["admin"]
@@ -216,7 +192,6 @@ async function criarAdminSeNaoExistir() {
       );
 
       console.log("👤 Usuário admin criado com sucesso.");
-
     }
 
   } catch (erro) {
@@ -224,19 +199,16 @@ async function criarAdminSeNaoExistir() {
     console.error("Erro ao criar admin:", erro);
 
   }
-
 }
 
 async function iniciarSistema() {
 
   await criarTabelas();
-
   await criarAdminSeNaoExistir();
 
   app.listen(PORT, async () => {
 
-    console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
-
+    console.log(`🚀 Servidor rodando na porta ${PORT}`);
     console.log("⏳ Inicializando WhatsApp...");
 
     try {
@@ -245,32 +217,14 @@ async function iniciarSistema() {
 
       console.log("✅ Cliente WhatsApp inicializado");
 
-      setInterval(async () => {
-
-        try {
-
-          const state = await client.getState();
-
-          console.log("📡 getState():", state);
-
-        } catch (e) {
-
-          console.log("❌ getState():", e.message);
-
-        }
-
-      }, 10000);
-
     } catch (erro) {
 
-      console.error("❌ Erro ao inicializar o WhatsApp:");
-      console.error(erro);
+      console.error("❌ Erro ao inicializar o WhatsApp:", erro);
 
     }
-
   });
-
 }
+
 const START = Date.now();
 
 async function enviarMensagem(numero, mensagem) {
@@ -289,7 +243,6 @@ iniciarSistema();
 // 3. MIDDLEWARES E CONFIGURAÇÕES EXPRESS
 // ==========================================
 app.use(express.json());
-
 app.use(session({
   store: new PgStore({
     pool: db,
@@ -325,33 +278,27 @@ app.post("/login", async (req, res) => {
   try {
 
     const { usuario, senha } = req.body;
-
     const resultado = await db.query(
       "SELECT * FROM usuarios WHERE usuario = $1",
       [usuario]
     );
 
     if (resultado.rows.length === 0) {
-
       return res.status(401).json({
         erro: "Usuário não encontrado"
       });
-
     }
 
     const user = resultado.rows[0];
-
     const senhaOk = bcrypt.compareSync(
       senha,
       user.senha
     );
 
     if (!senhaOk) {
-
       return res.status(401).json({
         erro: "Senha inválida"
       });
-
     }
 
     req.session.usuario = user.usuario;
@@ -368,9 +315,7 @@ app.post("/login", async (req, res) => {
     res.status(500).json({
       erro: erro.message
     });
-
   }
-
 });
 
 app.post("/usuarios", async (req, res) => {
@@ -422,9 +367,7 @@ app.post("/usuarios", async (req, res) => {
     res.status(500).json({
       erro: erro.message
     });
-
   }
-
 });
 
 // ==========================================
@@ -455,9 +398,7 @@ app.get("/admin/usuarios", verificarLogin, async (req, res) => {
     res.status(500).json({
       erro: erro.message
     });
-
   }
-
 });
 // 2. Rota para o admin ver todos os boletos de todos os usuários
 app.get("/admin/dashboard", verificarLogin, async (req, res) => {
@@ -486,9 +427,7 @@ app.get("/admin/dashboard", verificarLogin, async (req, res) => {
     res.status(500).json({
       erro: erro.message
     });
-
   }
-
 });
 
 // ROTA PARA EXIBIR O QR CODE NA TELA DO NAVEGADOR
@@ -519,9 +458,7 @@ app.get("/admin/whatsapp-status", async (req, res) => {
   res.json({
 
     conectado: whatsappReady,
-
     estado: whatsappState,
-
     temQrCode: !!ultimoQrCode
 
   });
@@ -544,13 +481,10 @@ app.get("/boletos", verificarLogin, async (req, res) => {
     res.status(500).json({
       erro: erro.message
     });
-
   }
-
 });
 
 //rota temporária de teste
-
 app.get("/teste-whatsapp", async (req, res) => {
   console.log("Estado:", whatsappState);
   console.log("Ready:", whatsappReady);
@@ -575,9 +509,7 @@ app.get("/teste-whatsapp", async (req, res) => {
     console.error(erro);
 
     res.status(500).send(erro.message);
-
   }
-
 });
 
 app.post("/boletos", verificarLogin, async (req, res) => {
@@ -586,7 +518,6 @@ app.post("/boletos", verificarLogin, async (req, res) => {
 
     const { nome, valor, vencimento, pago } = req.body;
     const usuarioLogado = req.session.usuario;
-
     const resultado = await db.query(
       `
       INSERT INTO boletos
@@ -612,9 +543,7 @@ app.post("/boletos", verificarLogin, async (req, res) => {
     res.status(500).json({
       erro: erro.message
     });
-
   }
-
 });
 
 app.put("/boletos/:id", verificarLogin, async (req, res) => {
@@ -623,9 +552,7 @@ app.put("/boletos/:id", verificarLogin, async (req, res) => {
 
     const { id } = req.params;
     const { nome, valor, vencimento, pago } = req.body;
-
     const usuarioLogado = req.session.usuario;
-
     const notificacaoStatus = pago ? 1 : 0;
 
     await db.query(
@@ -662,15 +589,12 @@ app.put("/boletos/:id", verificarLogin, async (req, res) => {
     res.status(500).json({
       erro: erro.message
     });
-
   }
-
 });
 
 app.delete("/boletos/:id", verificarLogin, async (req, res) => {
 
   try {
-
     const { id } = req.params;
     const usuarioLogado = req.session.usuario;
 
@@ -694,9 +618,7 @@ app.delete("/boletos/:id", verificarLogin, async (req, res) => {
     res.status(500).json({
       erro: erro.message
     });
-
   }
-
 });
 
 app.post("/logout", (req, res) => {
@@ -719,22 +641,22 @@ app.get("/", (req, res) => {
 // 5. AUTOMAÇÃO DE ENVIO (CRON JOB)
 // ==========================================
 // Executa todos os dias às 08:00 da manhã (Garante fuso local se o servidor estiver em UTC)
+
 cron.schedule(
   "0 8 * * *",
-  () => {
-    verificarEEnviarNotificacoes();
-  });
+  verificarEEnviarNotificacoes,
+  {
+    timezone: "America/Sao_Paulo"
+  }
+);
 
 // Função que faz a busca de datas e dispara as mensagens
 async function verificarEEnviarNotificacoes() {
   console.log("⏰ Iniciando checagem diária de boletos para o WhatsApp...");
 
   if (!whatsappReady) {
-
     console.log("⚠️ WhatsApp indisponível.");
-
     return;
-
   }
 
   const query = `
@@ -745,7 +667,6 @@ async function verificarEEnviarNotificacoes() {
   `;
 
   try {
-
     const resultado = await db.query(query);
     const rows = resultado.rows;
 
@@ -759,10 +680,8 @@ async function verificarEEnviarNotificacoes() {
     );
 
     const hoje = agoraBR.toISOString().split("T")[0];
-
     const amanhaBR = new Date(agoraBR);
     amanhaBR.setDate(amanhaBR.getDate() + 1);
-
     const amanha = amanhaBR.toISOString().split("T")[0];
 
     console.log(`📅 Datas de checagem -> Hoje: "${hoje}" | Amanhã: "${amanha}"`);
@@ -802,7 +721,6 @@ async function verificarEEnviarNotificacoes() {
           `Por favor, efetue o pagamento para evitar juros!`;
 
         try {
-
           if (!boleto.telefone) {
             console.log(`⚠️ Usuário sem telefone cadastrado.`);
             continue;
@@ -835,7 +753,6 @@ async function verificarEEnviarNotificacoes() {
 
             const ddiEDdd = numeroLimpo.substring(0, 4);
             const restoDoNumero = numeroLimpo.substring(5);
-
             const numeroSemNono =
               ddiEDdd + restoDoNumero;
 
@@ -889,9 +806,7 @@ async function verificarEEnviarNotificacoes() {
         console.log(
           `⏭️ Boleto "${boleto.nome}" pulado porque a data "${vencimentoBoleto}" não é igual a hoje ou amanhã.`
         );
-
       }
-
     }
 
     console.log("🏁 Fim da rotina de checagem.");
@@ -902,7 +817,5 @@ async function verificarEEnviarNotificacoes() {
       "❌ Erro ao buscar boletos para notificação:",
       erro.message
     );
-
   }
 }
-
