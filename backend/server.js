@@ -99,7 +99,8 @@ client.on("qr", (qr) => {
 });
 
 client.on("loading_screen", (percent, message) => {
-  whatsappState = `LOADING ${percent}%`;
+
+  atualizarEstadoWhatsApp(`LOADING ${percent}%`);
 
   if (percent === 100) {
     ultimoQrCode = null;
@@ -108,27 +109,38 @@ client.on("loading_screen", (percent, message) => {
   console.log(`📱 ${percent}% - ${message}`);
 });
 
+client.on("authenticated", () => {
+
+  atualizarEstadoWhatsApp("AUTHENTICATED");
+
+  console.log("🔐 WhatsApp autenticado.");
+});
+
 client.on("change_state", (state) => {
-  whatsappState = state;
+
+  atualizarEstadoWhatsApp(state);
 
   console.log("🔄 Estado:", state);
 });
 
-client.on("ready", async () => {
-  whatsappReady = true;
-  whatsappState = "CONNECTED";
+client.on("ready", () => {
+
   ultimoQrCode = null;
+
+  atualizarEstadoWhatsApp("CONNECTED", true);
 
   console.log("✅ WhatsApp conectado.");
 });
 
 client.on("remote_session_saved", () => {
-  whatsappState = "SESSION_SAVED";
+
+  atualizarEstadoWhatsApp("SESSION_SAVED");
 
   console.log("💾 Sessão salva.");
 });
 
 client.on("auth_failure", (msg) => {
+
   atualizarEstadoWhatsApp("AUTH_FAILURE");
 
   console.error("❌ Falha na autenticação:");
@@ -136,6 +148,7 @@ client.on("auth_failure", (msg) => {
 });
 
 client.on("disconnected", (reason) => {
+
   atualizarEstadoWhatsApp("DISCONNECTED");
 
   console.log("🔌 WhatsApp desconectado.");
