@@ -406,7 +406,6 @@ app.get("/admin/dashboard", verificarLogin, async (req, res) => {
 });
 
 // ROTA PARA EXIBIR O QR CODE NA TELA DO NAVEGADOR
-const QRCodeDisplay = require("qrcode");
 app.get("/admin/qrcode", verificarLogin, (req, res) => {
   if (req.session.usuario !== "admin") {
     return res.status(403).send("Acesso negado.");
