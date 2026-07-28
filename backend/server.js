@@ -1,19 +1,20 @@
 require("dotenv").config();
-const PORT = process.env.PORT || 3000;
+
 const express = require("express");
-const app = express();
-const db = require("./database");
-const path = require("path");
 const session = require("express-session");
-const bcrypt = require("bcrypt");
-const cron = require("node-cron"); // 👈 Adicionado para agendamento
-const { Client, LocalAuth } = require("whatsapp-web.js"); // 👈 Adicionado para WhatsApp
 const PgStore = require("connect-pg-simple")(session);
+const bcrypt = require("bcrypt");
+const cron = require("node-cron");
+const path = require("path");
+const QRCodeDisplay = require("qrcode");
+const { Client, LocalAuth } = require("whatsapp-web.js");
+const db = require("./database");
+const app = express();
+const PORT = process.env.PORT || 3000;
 
 async function criarTabelas() {
 
   try {
-
     await db.query(`
       CREATE TABLE IF NOT EXISTS usuarios (
         id SERIAL PRIMARY KEY,
@@ -35,7 +36,6 @@ async function criarTabelas() {
       )
     `);
 
-    // Índices para melhorar as consultas
     await db.query(`
       CREATE INDEX IF NOT EXISTS idx_boletos_usuario
       ON boletos(usuario)
@@ -46,10 +46,9 @@ async function criarTabelas() {
       ON boletos(vencimento)
     `);
 
-    console.log("✅ Tabelas e índices criados/verificados");
+    console.log("✅ Banco de dados inicializado.");
 
   } catch (erro) {
-
     console.error("❌ Erro ao criar tabelas:", erro);
   }
 }
@@ -62,14 +61,11 @@ const client = new Client({
   authStrategy: new LocalAuth({
     clientId: "gerenciador-boletos"
   }),
-
   puppeteer: {
     headless: true,
-
     executablePath: process.env.RENDER
       ? "/usr/bin/google-chrome"
       : undefined,
-
     args: [
       "--no-sandbox",
       "--disable-setuid-sandbox",
@@ -82,33 +78,27 @@ const client = new Client({
       "--disable-features=Translate",
       "--window-size=1280,720"
     ],
-
     defaultViewport: null
   },
-
-  webVersionCache: {
-    type: "local"
-  }
 });
 
-let whatsappReady = false;
-let whatsappState = "STARTING";
+function atualizarEstadoWhatsApp(estado, pronto = false) {
+  whatsappState = estado;
+  whatsappReady = Boolean(pronto);
+}
 
 // Variável global para guardar o último código gerado
 let ultimoQrCode = null;
 
 client.on("qr", (qr) => {
-
   ultimoQrCode = qr;
-  whatsappReady = false;
-  whatsappState = "QR_CODE";
+
+  atualizarEstadoWhatsApp("QR_CODE");
 
   console.log("👉 QR Code gerado.");
-  console.log("🟢 EVENTO QR");
 });
 
 client.on("loading_screen", (percent, message) => {
-
   whatsappState = `LOADING ${percent}%`;
 
   if (percent === 100) {
@@ -116,65 +106,50 @@ client.on("loading_screen", (percent, message) => {
   }
 
   console.log(`📱 ${percent}% - ${message}`);
-  console.log(`🟢 LOADING ${percent}%`);
 });
 
 client.on("change_state", (state) => {
-
   whatsappState = state;
 
-  console.log("🔄 Novo estado:", state);
-  console.log("🟢 CHANGE_STATE:", state);
+  console.log("🔄 Estado:", state);
 });
 
 client.on("ready", async () => {
-
   whatsappReady = true;
   whatsappState = "CONNECTED";
   ultimoQrCode = null;
 
-  console.log("✅ WhatsApp pronto!");
+  console.log("✅ WhatsApp conectado.");
 });
 
 client.on("remote_session_saved", () => {
-
   whatsappState = "SESSION_SAVED";
 
-  console.log("💾 Sessão salva");
-  console.log("🟢 EVENTO REMOTE_SESSION_SAVED");
+  console.log("💾 Sessão salva.");
 });
 
 client.on("auth_failure", (msg) => {
+  atualizarEstadoWhatsApp("AUTH_FAILURE");
 
-  whatsappReady = false;
-  whatsappState = "AUTH_FAILURE";
-
-  console.log("❌ AUTH FAILURE");
-  console.log(msg);
+  console.error("❌ Falha na autenticação:");
+  console.error(msg);
 });
 
 client.on("disconnected", (reason) => {
+  atualizarEstadoWhatsApp("DISCONNECTED");
 
-  whatsappReady = false;
-  whatsappState = "DISCONNECTED";
-
-  console.log("🔌 WhatsApp desconectado");
-  console.log("🟢 DISCONNECTED:", reason);
-
+  console.log("🔌 WhatsApp desconectado.");
+  console.log(reason);
 });
 
 client.on("authenticated", () => {
-
-  whatsappState = "AUTHENTICATED";
+  atualizarEstadoWhatsApp("AUTHENTICATED");
 
   console.log("🔐 WhatsApp autenticado");
-
 });
 
 async function criarAdminSeNaoExistir() {
-
   try {
-
     const senhaHash = bcrypt.hashSync("123456", 10);
     const resultado = await db.query(
       "SELECT * FROM usuarios WHERE usuario = $1",
