@@ -82,6 +82,16 @@ const client = new Client({
   },
 });
 
+// Variável global para guardar o último código gerado
+let whatsappReady = false;
+let whatsappState = "STARTING";
+let ultimoQrCode = null;
+
+function atualizarEstadoWhatsApp(estado, pronto = false) {
+  whatsappState = estado;
+  whatsappReady = Boolean(pronto);
+}
+
 function logEstado(evento) {
   console.log("\n====================================");
   console.log(`📌 EVENTO: ${evento}`);
@@ -90,14 +100,6 @@ function logEstado(evento) {
   console.log(`🕒 ${new Date().toLocaleString("pt-BR")}`);
   console.log("====================================\n");
 }
-
-function atualizarEstadoWhatsApp(estado, pronto = false) {
-  whatsappState = estado;
-  whatsappReady = Boolean(pronto);
-}
-
-// Variável global para guardar o último código gerado
-let ultimoQrCode = null;
 
 client.on("qr", (qr) => {
   ultimoQrCode = qr;
