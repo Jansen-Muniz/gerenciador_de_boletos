@@ -82,6 +82,15 @@ const client = new Client({
   },
 });
 
+function logEstado(evento) {
+  console.log("\n====================================");
+  console.log(`📌 EVENTO: ${evento}`);
+  console.log(`📱 whatsappState: ${whatsappState}`);
+  console.log(`✅ whatsappReady: ${whatsappReady}`);
+  console.log(`🕒 ${new Date().toLocaleString("pt-BR")}`);
+  console.log("====================================\n");
+}
+
 function atualizarEstadoWhatsApp(estado, pronto = false) {
   whatsappState = estado;
   whatsappReady = Boolean(pronto);
@@ -93,43 +102,91 @@ let ultimoQrCode = null;
 client.on("qr", (qr) => {
   ultimoQrCode = qr;
 
-  atualizarEstadoWhatsApp("QR_CODE");
+  atualizarEstadoWhatsApp("QR_CODE", false);
 
   console.log("👉 QR Code gerado.");
+
+  logEstado("QR");
 });
 
 client.on("loading_screen", (percent, message) => {
 
-  atualizarEstadoWhatsApp(`LOADING ${percent}%`);
+  atualizarEstadoWhatsApp(`LOADING ${percent}%`, false);
 
   if (percent === 100) {
     ultimoQrCode = null;
   }
 
   console.log(`📱 ${percent}% - ${message}`);
+  console.log("Mensagem:", message);
+
+  logEstado("LOADING");
 });
 
-client.on("authenticated", () => {
+client.on("authenticated", async () => {
 
   atualizarEstadoWhatsApp("AUTHENTICATED");
 
-  console.log("🔐 WhatsApp autenticado.");
+  console.log("🔐 WhatsApp autenticado");
+
+  try {
+
+    console.log("📱 Client info:", client.info);
+
+  } catch (err) {
+
+    console.log("Client info indisponível.");
+
+  }
+
+  logEstado("AUTHENTICATED");
+
 });
 
-client.on("change_state", (state) => {
+client.on("change_state", async (state) => {
 
-  atualizarEstadoWhatsApp(state);
+  atualizarEstadoWhatsApp(state, state === "CONNECTED");
 
   console.log("🔄 Estado:", state);
+
+  try {
+
+    console.log("📡 getState():", await client.getState());
+
+  } catch (err) {
+
+    console.log("❌ getState:", err.message);
+
+  }
+
+  logEstado("CHANGE_STATE");
+
 });
 
-client.on("ready", () => {
-
-  ultimoQrCode = null;
+client.on("ready", async () => {
 
   atualizarEstadoWhatsApp("CONNECTED", true);
 
+  ultimoQrCode = null;
+
   console.log("✅ WhatsApp conectado.");
+
+  console.log("📱 Informações do cliente:");
+
+  console.log(client.info);
+
+  try {
+
+    console.log("📡 getState():", await client.getState());
+
+  } catch (err) {
+
+    console.log(err.message);
+
+  }
+
+  logEstado("READY");
+
 });
 
 client.on("remote_session_saved", () => {
@@ -137,28 +194,43 @@ client.on("remote_session_saved", () => {
   atualizarEstadoWhatsApp("SESSION_SAVED");
 
   console.log("💾 Sessão salva.");
+
+  logEstado("REMOTE_SESSION_SAVED");
+
+});
+
+client.on("disconnected", async (reason) => {
+
+  atualizarEstadoWhatsApp("DISCONNECTED", false);
+
+  console.log("🔌 WhatsApp desconectado.");
+
+  console.log("Motivo:", reason);
+
+  try {
+
+    console.log("📡 getState():", await client.getState());
+
+  } catch (err) {
+
+    console.log("❌ getState:", err.message);
+
+  }
+
+  logEstado("DISCONNECTED");
+
 });
 
 client.on("auth_failure", (msg) => {
 
-  atualizarEstadoWhatsApp("AUTH_FAILURE");
+  atualizarEstadoWhatsApp("AUTH_FAILURE", false);
 
   console.error("❌ Falha na autenticação:");
+
   console.error(msg);
-});
 
-client.on("disconnected", (reason) => {
+  logEstado("AUTH_FAILURE");
 
-  atualizarEstadoWhatsApp("DISCONNECTED");
-
-  console.log("🔌 WhatsApp desconectado.");
-  console.log(reason);
-});
-
-client.on("authenticated", () => {
-  atualizarEstadoWhatsApp("AUTHENTICATED");
-
-  console.log("🔐 WhatsApp autenticado");
 });
 
 async function criarAdminSeNaoExistir() {
