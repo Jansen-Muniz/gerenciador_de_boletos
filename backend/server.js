@@ -92,7 +92,6 @@ console.log("\n====================================");
 console.log("🚀 INFORMAÇÕES DO AMBIENTE");
 console.log("🟢 Node:", process.version);
 console.log("🟢 whatsapp-web.js:", require("whatsapp-web.js/package.json").version);
-console.log("🟢 Puppeteer:", require("puppeteer/package.json").version);
 console.log("====================================\n");
 
 // Variável global para guardar o último código gerado
