@@ -203,6 +203,10 @@ client.on("ready", async () => {
 
 });
 
+client.on("message", (msg) => {
+  console.log("📩 Mensagem recebida:", msg.body);
+});
+
 client.on("remote_session_saved", () => {
 
   atualizarEstadoWhatsApp("SESSION_SAVED");
