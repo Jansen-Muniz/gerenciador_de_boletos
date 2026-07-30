@@ -61,11 +61,18 @@ const client = new Client({
   authStrategy: new LocalAuth({
     clientId: "gerenciador-boletos"
   }),
+
+  webVersionCache: {
+    type: "remote",
+    remotePath: "https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2412.54.html"
+  },
+
   puppeteer: {
     headless: true,
     executablePath: process.env.RENDER
       ? "/usr/bin/google-chrome"
       : undefined,
+
     args: [
       "--no-sandbox",
       "--disable-setuid-sandbox",
@@ -77,10 +84,16 @@ const client = new Client({
       "--disable-renderer-backgrounding",
       "--disable-features=Translate",
       "--window-size=1280,720"
-    ],
-    defaultViewport: null
-  },
+    ]
+  }
 });
+
+console.log("\n====================================");
+console.log("🚀 INFORMAÇÕES DO AMBIENTE");
+console.log("🟢 Node:", process.version);
+console.log("🟢 whatsapp-web.js:", require("whatsapp-web.js/package.json").version);
+console.log("🟢 Puppeteer:", require("puppeteer/package.json").version);
+console.log("====================================\n");
 
 // Variável global para guardar o último código gerado
 let whatsappReady = false;
