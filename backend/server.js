@@ -153,6 +153,16 @@ client.on("authenticated", async () => {
 
   }
 
+  try {
+
+    console.log("🌐 Web Version:", await client.getWWebVersion());
+
+  } catch (err) {
+
+    console.log("🌐 Web Version indisponível.");
+
+  }
+
   logEstado("AUTHENTICATED");
 
 });
@@ -293,16 +303,33 @@ async function iniciarSistema() {
 
       await client.initialize();
 
-      console.log("✅ Cliente WhatsApp inicializado");
+      console.log("✅ Cliente WhatsApp inicializado.");
+      console.log("⏳ Aguardando autenticação...");
+
+      // 🔍 Monitora o estado real do cliente
+      setInterval(async () => {
+
+        try {
+
+          console.log("📡 Estado REAL:", await client.getState());
+
+        } catch (err) {
+
+          console.log("📡 Estado REAL (erro):", err.message);
+
+        }
+
+      }, 5000);
 
     } catch (erro) {
 
       console.error("❌ Erro ao inicializar o WhatsApp:", erro);
 
     }
-  });
-}
 
+  });
+
+}
 const START = Date.now();
 
 async function enviarMensagem(numero, mensagem) {
