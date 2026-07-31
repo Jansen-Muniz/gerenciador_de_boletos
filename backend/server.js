@@ -358,7 +358,7 @@ async function iniciarSistema() {
       setInterval(() => {
 
         exec(
-          "ps -o pid,ppid,%mem,%cpu,comm | grep -E 'chrome|node' | grep -v grep",
+          "ps -eo pid,ppid,%mem,%cpu,comm | cut -c1-55 | grep -E 'chrome|node'",
           (err, stdout) => {
 
             if (!err) {
@@ -366,6 +366,7 @@ async function iniciarSistema() {
               console.log(stdout);
               console.log("================================\n");
             }
+
           }
         );
       }, 15000);
