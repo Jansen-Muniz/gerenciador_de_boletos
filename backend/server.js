@@ -6,6 +6,7 @@ const PgStore = require("connect-pg-simple")(session);
 const bcrypt = require("bcrypt");
 const cron = require("node-cron");
 const path = require("path");
+const v8 = require("v8");
 const QRCodeDisplay = require("qrcode");
 const { Client, LocalAuth } = require("whatsapp-web.js");
 const db = require("./database");
@@ -310,24 +311,46 @@ async function iniciarSistema() {
       console.log("✅ Cliente WhatsApp inicializado.");
       console.log("⏳ Aguardando autenticação...");
 
-      // 🔍 Monitora o estado real do cliente
+      // Estado do WhatsApp
       setInterval(async () => {
 
         try {
+
           const state = await client.getState();
 
           console.log("📡 Estado REAL:", state);
 
           if (state === "CONNECTED" && !whatsappReady) {
+
             console.log("🟢 Atualizando estado pelo getState()");
 
             atualizarEstadoWhatsApp("CONNECTED", true);
 
             ultimoQrCode = null;
+
           }
+
         } catch (err) {
+
           console.log("📡 getState() ERRO:", err.message);
+
         }
+
+      }, 5000);
+
+      // Memória
+      setInterval(() => {
+
+        const mem = process.memoryUsage();
+        const heap = v8.getHeapStatistics();
+
+        console.log(
+          `🧠 RSS: ${(mem.rss / 1024 / 1024).toFixed(1)} MB | ` +
+          `Heap: ${(mem.heapUsed / 1024 / 1024).toFixed(1)} MB | ` +
+          `Heap Limit: ${(heap.heap_size_limit / 1024 / 1024).toFixed(1)} MB | ` +
+          `External: ${(mem.external / 1024 / 1024).toFixed(1)} MB`
+        );
+
       }, 5000);
 
     } catch (erro) {
@@ -335,10 +358,9 @@ async function iniciarSistema() {
       console.error("❌ Erro ao inicializar o WhatsApp:", erro);
 
     }
-
   });
-
 }
+
 const START = Date.now();
 
 async function enviarMensagem(numero, mensagem) {
