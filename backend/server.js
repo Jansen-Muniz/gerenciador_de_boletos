@@ -357,18 +357,18 @@ async function iniciarSistema() {
       // Processos do Linux
       setInterval(() => {
 
-        exec("ps aux | grep -E 'chrome|node' | grep -v grep", (err, stdout) => {
+        exec(
+          "ps -eo pid,%mem,%cpu,rss,comm,args | grep -E 'chrome|node' | grep -v grep",
+          (err, stdout) => {
 
-          if (!err) {
-
-            console.log("\n========== PROCESSOS ==========");
-            console.log(stdout);
-            console.log("================================\n");
+            if (!err) {
+              console.log("\n========== PROCESSOS ==========");
+              console.log(stdout);
+              console.log("================================\n");
+            }
 
           }
-
-        });
-
+        );
       }, 15000);
 
       console.log("🔍 Monitoramento iniciado.");
