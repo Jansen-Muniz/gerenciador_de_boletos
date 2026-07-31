@@ -310,15 +310,20 @@ async function iniciarSistema() {
       setInterval(async () => {
 
         try {
+          const state = await client.getState();
 
-          console.log("📡 Estado REAL:", await client.getState());
+          console.log("📡 Estado REAL:", state);
 
+          if (state === "CONNECTED" && !whatsappReady) {
+            console.log("🟢 Atualizando estado pelo getState()");
+
+            atualizarEstadoWhatsApp("CONNECTED", true);
+
+            ultimoQrCode = null;
+          }
         } catch (err) {
-
-          console.log("📡 Estado REAL (erro):", err.message);
-
+          console.log("📡 getState() ERRO:", err.message);
         }
-
       }, 5000);
 
     } catch (erro) {
