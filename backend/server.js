@@ -125,7 +125,11 @@ client.on("qr", (qr) => {
 
 client.on("loading_screen", (percent, message) => {
 
-  atualizarEstadoWhatsApp(`LOADING ${percent}%`, false);
+  if (!whatsappReady) {
+    atualizarEstadoWhatsApp(`LOADING ${percent}%`, false);
+  } else {
+    console.log("🟢 LOADING ignorado porque o WhatsApp já está conectado.");
+  }
 
   if (percent === 100) {
     ultimoQrCode = null;
