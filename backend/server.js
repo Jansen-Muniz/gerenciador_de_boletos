@@ -11,6 +11,7 @@ const QRCodeDisplay = require("qrcode");
 const { Client, LocalAuth } = require("whatsapp-web.js");
 const db = require("./database");
 const app = express();
+const { exec } = require("child_process");
 const PORT = process.env.PORT || 3000;
 
 async function criarTabelas() {
@@ -353,10 +354,26 @@ async function iniciarSistema() {
 
       }, 5000);
 
+      // Processos do Linux
+      setInterval(() => {
+
+        exec("ps aux | grep -E 'chrome|node' | grep -v grep", (err, stdout) => {
+
+          if (!err) {
+
+            console.log("\n========== PROCESSOS ==========");
+            console.log(stdout);
+            console.log("================================\n");
+
+          }
+
+        });
+
+      }, 15000);
+
+      console.log("🔍 Monitoramento iniciado.");
     } catch (erro) {
-
       console.error("❌ Erro ao inicializar o WhatsApp:", erro);
-
     }
   });
 }
