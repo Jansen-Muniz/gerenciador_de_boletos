@@ -202,8 +202,51 @@ client.on("ready", async () => {
   console.log("✅ WhatsApp conectado.");
 
   console.log("📱 Informações do cliente:");
-
   console.log(client.info);
+
+  const browser = client.pupBrowser;
+  const page = client.pupPage;
+
+  console.log("🌐 Browser disponível:", !!browser);
+  console.log("📄 Page disponível:", !!page);
+
+  console.log("🔍 Monitorando Puppeteer...");
+
+  if (browser) {
+    browser.on("disconnected", () => {
+      console.log("💥 Chromium desconectado!");
+    });
+  }
+
+  if (page) {
+    page.on("close", () => {
+      console.log("📄 Página do WhatsApp foi fechada!");
+    });
+
+    page.on("error", (err) => {
+      console.log("❌ Page Error:", err.message);
+    });
+
+    page.on("pageerror", (err) => {
+      console.log("❌ JS Error:", err.message);
+    });
+  }
+
+  browser.on("disconnected", () => {
+    console.log("💥 Chromium desconectado!");
+  });
+
+  page.on("close", () => {
+    console.log("📄 Página do WhatsApp foi fechada!");
+  });
+
+  page.on("error", (err) => {
+    console.log("❌ Page Error:", err.message);
+  });
+
+  page.on("pageerror", (err) => {
+    console.log("❌ JS Error:", err.message);
+  });
 
   try {
 
