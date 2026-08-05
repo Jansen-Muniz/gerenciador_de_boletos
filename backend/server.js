@@ -195,6 +195,8 @@ client.on("change_state", async (state) => {
 
 client.on("ready", async () => {
 
+  console.log("🟢 ENTROU NO READY");
+
   atualizarEstadoWhatsApp("CONNECTED", true);
 
   ultimoQrCode = null;
@@ -207,20 +209,46 @@ client.on("ready", async () => {
   const browser = client.pupBrowser;
   const page = client.pupPage;
 
-  if (browser) {
-    const pages = await browser.pages();
+  try {
 
-    console.log("\n======= ABAS DO CHROMIUM =======");
+    if (browser) {
 
-    for (const p of pages) {
-      try {
-        console.log(await p.title(), "->", p.url());
-      } catch (e) {
-        console.log("Erro ao obter aba:", e.message);
+      console.log("🟢 Antes do browser.pages()");
+
+      const pages = await browser.pages();
+
+      console.log("🟢 Depois do browser.pages()");
+
+      console.log("\n======= ABAS DO CHROMIUM =======");
+
+      console.log("🟢 Antes do for");
+
+      for (const p of pages) {
+
+        try {
+
+          console.log(await p.title(), "->", p.url());
+
+        } catch (e) {
+
+          console.log("❌ Erro ao obter aba:", e.message);
+
+        }
+
       }
+
+      console.log("================================\n");
+
+    } else {
+
+      console.log("❌ Browser é undefined.");
+
     }
 
-    console.log("================================\n");
+  } catch (err) {
+
+    console.log("❌ Erro ao listar páginas:", err);
+
   }
 
   console.log("🌐 Browser disponível:", !!browser);
@@ -229,23 +257,35 @@ client.on("ready", async () => {
   console.log("🔍 Monitorando Puppeteer...");
 
   if (browser) {
+
     browser.on("disconnected", () => {
+
       console.log("💥 Chromium desconectado!");
+
     });
+
   }
 
   if (page) {
+
     page.on("close", () => {
+
       console.log("📄 Página do WhatsApp foi fechada!");
+
     });
 
     page.on("error", (err) => {
+
       console.log("❌ Page Error:", err.message);
+
     });
 
     page.on("pageerror", (err) => {
+
       console.log("❌ JS Error:", err.message);
+
     });
+
   }
 
   try {
@@ -254,7 +294,7 @@ client.on("ready", async () => {
 
   } catch (err) {
 
-    console.log(err.message);
+    console.log("❌ getState():", err.message);
 
   }
 
