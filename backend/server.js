@@ -401,14 +401,31 @@ async function iniciarSistema() {
       setInterval(() => {
 
         exec(
-          "ps -eo pid,ppid,%mem,%cpu,comm | cut -c1-55 | grep -E 'chrome|node'",
+          "ps -eo pid,rss,comm | grep -E 'chrome|node' | grep -v grep",
           (err, stdout) => {
 
-            if (!err) {
-              console.log("\n========== PROCESSOS ==========");
-              console.log(stdout);
-              console.log("================================\n");
-            }
+            if (err) return;
+
+            console.log("\n====== MEMÓRIA DOS PROCESSOS ======");
+
+            stdout
+              .trim()
+              .split("\n")
+              .forEach((linha) => {
+
+                const partes = linha.trim().split(/\s+/);
+
+                const pid = partes[0];
+                const rssKB = Number(partes[1]);
+                const comando = partes[2];
+
+                console.log(
+                  `${comando} (PID ${pid}) -> ${(rssKB / 1024).toFixed(1)} MB`
+                );
+
+              });
+
+            console.log("===================================\n");
 
           }
         );
