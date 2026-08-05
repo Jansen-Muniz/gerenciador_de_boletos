@@ -415,6 +415,8 @@ async function iniciarSistema() {
 
       }
 
+      console.log("🚨 TESTE ÚNICO 12345");
+
       await client.initialize();
 
       console.log("✅ Cliente WhatsApp inicializado.");
