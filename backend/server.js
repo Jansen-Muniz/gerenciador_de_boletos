@@ -390,6 +390,31 @@ async function iniciarSistema() {
 
     try {
 
+      const eventos = [
+        "qr",
+        "authenticated",
+        "auth_failure",
+        "loading_screen",
+        "ready",
+        "change_state",
+        "remote_session_saved",
+        "disconnected"
+      ];
+
+      for (const evento of eventos) {
+
+        client.on(evento, (...args) => {
+
+          console.log(`📢 EVENTO DISPARADO: ${evento}`);
+
+          if (args.length) {
+            console.log("📦 Argumentos:", args);
+          }
+
+        });
+
+      }
+
       await client.initialize();
 
       console.log("✅ Cliente WhatsApp inicializado.");
