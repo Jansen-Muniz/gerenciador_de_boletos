@@ -207,6 +207,22 @@ client.on("ready", async () => {
   const browser = client.pupBrowser;
   const page = client.pupPage;
 
+  if (browser) {
+    const pages = await browser.pages();
+
+    console.log("\n======= ABAS DO CHROMIUM =======");
+
+    for (const p of pages) {
+      try {
+        console.log(await p.title(), "->", p.url());
+      } catch (e) {
+        console.log("Erro ao obter aba:", e.message);
+      }
+    }
+
+    console.log("================================\n");
+  }
+
   console.log("🌐 Browser disponível:", !!browser);
   console.log("📄 Page disponível:", !!page);
 
@@ -231,22 +247,6 @@ client.on("ready", async () => {
       console.log("❌ JS Error:", err.message);
     });
   }
-
-  browser.on("disconnected", () => {
-    console.log("💥 Chromium desconectado!");
-  });
-
-  page.on("close", () => {
-    console.log("📄 Página do WhatsApp foi fechada!");
-  });
-
-  page.on("error", (err) => {
-    console.log("❌ Page Error:", err.message);
-  });
-
-  page.on("pageerror", (err) => {
-    console.log("❌ JS Error:", err.message);
-  });
 
   try {
 
