@@ -66,6 +66,7 @@ const client = new Client({
 
   puppeteer: {
     headless: true,
+
     executablePath: process.env.RENDER
       ? "/usr/bin/google-chrome"
       : undefined,
@@ -74,12 +75,24 @@ const client = new Client({
       "--no-sandbox",
       "--disable-setuid-sandbox",
       "--disable-dev-shm-usage",
+
+      // Reduz processos auxiliares do Chromium
       "--disable-gpu",
       "--disable-extensions",
+      "--disable-software-rasterizer",
       "--disable-background-networking",
-      "--disable-background-timer-throttling",
-      "--disable-renderer-backgrounding",
+
+      // Reduz quantidade de processos de renderização
+      "--disable-site-isolation-trials",
+      "--renderer-process-limit=2",
+
+      // Evita recursos desnecessários
       "--disable-features=Translate",
+      "--disable-default-apps",
+      "--disable-sync",
+      "--no-first-run",
+      "--no-default-browser-check",
+
       "--window-size=1280,720"
     ]
   }
