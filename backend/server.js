@@ -385,37 +385,41 @@ async function iniciarSistema() {
 
     try {
 
-      const eventos = [
-        "qr",
-        "authenticated",
-        "auth_failure",
-        "loading_screen",
-        "ready",
-        "change_state",
-        "remote_session_saved",
-        "disconnected"
-      ];
-
-      for (const evento of eventos) {
-
-        client.on(evento, (...args) => {
-
-          console.log(`📢 EVENTO DISPARADO: ${evento}`);
-
-          if (args.length) {
-            console.log("📦 Argumentos:", args);
-          }
-
-        });
-
-      }
-
       console.log("🚨 TESTE ÚNICO 12345");
+      console.log("🚀 ANTES DO INITIALIZE");
 
       await client.initialize();
 
-      console.log("✅ Cliente WhatsApp inicializado.");
+      console.log("✅ DEPOIS DO INITIALIZE");
       console.log("⏳ Aguardando autenticação...");
+      /*
+            const eventos = [
+              "qr",
+              "authenticated",
+              "auth_failure",
+              "loading_screen",
+              "ready",
+              "change_state",
+              "remote_session_saved",
+              "disconnected"
+            ];
+      
+            for (const evento of eventos) {
+      
+              client.on(evento, (...args) => {
+      
+                console.log(`📢 EVENTO DISPARADO: ${evento}`);
+      
+                if (args.length) {
+                  console.log("📦 Argumentos:", args);
+                }
+      
+              });
+      
+            }
+      
+            console.log("🚨 TESTE ÚNICO 12345");
+      */
 
       // Estado do WhatsApp
       setInterval(async () => {
