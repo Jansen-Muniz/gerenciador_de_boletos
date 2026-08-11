@@ -84,7 +84,7 @@ const client = new Client({
 
       // Reduz quantidade de processos de renderização
       "--disable-site-isolation-trials",
-      "--renderer-process-limit=2",
+      "--renderer-process-limit=1",
 
       // Evita recursos desnecessários
       "--disable-features=Translate",
