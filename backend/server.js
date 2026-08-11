@@ -93,8 +93,6 @@ const client = new Client({
       "--no-first-run",
       "--no-default-browser-check",
 
-      "--single-process",
-
       "--window-size=1280,720"
     ]
   }
