@@ -76,22 +76,22 @@ const client = new Client({
       "--disable-setuid-sandbox",
       "--disable-dev-shm-usage",
 
-      // Reduz processos auxiliares do Chromium
       "--disable-gpu",
       "--disable-extensions",
       "--disable-software-rasterizer",
+
       "--disable-background-networking",
-
-      // Reduz quantidade de processos de renderização
-      "--disable-site-isolation-trials",
-      "--renderer-process-limit=1",
-
-      // Evita recursos desnecessários
-      "--disable-features=Translate",
-      "--disable-default-apps",
       "--disable-sync",
+      "--disable-default-apps",
       "--no-first-run",
       "--no-default-browser-check",
+
+      "--disable-features=Translate",
+
+      // Tenta reduzir consumo de memória
+      "--disable-background-timer-throttling",
+      "--disable-renderer-backgrounding",
+      "--disable-backgrounding-occluded-windows",
 
       "--window-size=1280,720"
     ]
