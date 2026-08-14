@@ -1,5 +1,4 @@
 require("dotenv").config();
-
 const express = require("express");
 const session = require("express-session");
 const PgStore = require("connect-pg-simple")(session);
@@ -7,8 +6,8 @@ const bcrypt = require("bcrypt");
 const cron = require("node-cron");
 const path = require("path");
 const v8 = require("v8");
+const whatsapp = require("./whatsapp");
 const QRCodeDisplay = require("qrcode");
-const { Client, LocalAuth } = require("whatsapp-web.js");
 const db = require("./database");
 const app = express();
 const { exec } = require("child_process");
@@ -59,304 +58,13 @@ async function criarTabelas() {
 // 1. CONFIGURAÇÃO E INICIALIZAÇÃO DO WHATSAPP
 // ==========================================
 
-const client = new Client({
-  authStrategy: new LocalAuth({
-    clientId: "gerenciador-boletos"
-  }),
-
-  puppeteer: {
-    headless: true,
-
-    executablePath: process.env.RENDER
-      ? "/usr/bin/google-chrome"
-      : undefined,
-
-    args: [
-      "--no-sandbox",
-      "--disable-setuid-sandbox",
-      "--disable-dev-shm-usage",
-
-      "--disable-gpu",
-      "--disable-extensions",
-      "--disable-software-rasterizer",
-
-      "--disable-background-networking",
-      "--disable-sync",
-      "--disable-default-apps",
-      "--no-first-run",
-      "--no-default-browser-check",
-
-      "--disable-features=Translate",
-
-      // Tenta reduzir consumo de memória
-      "--disable-background-timer-throttling",
-      "--disable-renderer-backgrounding",
-      "--disable-backgrounding-occluded-windows",
-
-      "--window-size=1280,720"
-    ]
-  }
-});
-
 console.log("\n====================================");
 console.log("🚀 INFORMAÇÕES DO AMBIENTE");
 console.log("🟢 Node:", process.version);
-console.log("🟢 whatsapp-web.js:", require("whatsapp-web.js/package.json").version);
 console.log("====================================\n");
 
 // Variável global para guardar o último código gerado
-let whatsappReady = false;
-let whatsappState = "STARTING";
-let ultimoQrCode = null;
 
-function atualizarEstadoWhatsApp(estado, pronto = false) {
-  whatsappState = estado;
-  whatsappReady = Boolean(pronto);
-}
-
-function logEstado(evento) {
-  console.log("\n====================================");
-  console.log(`📌 EVENTO: ${evento}`);
-  console.log(`📱 whatsappState: ${whatsappState}`);
-  console.log(`✅ whatsappReady: ${whatsappReady}`);
-  console.log(`🕒 ${new Date().toLocaleString("pt-BR")}`);
-  console.log("====================================\n");
-}
-
-client.on("qr", (qr) => {
-  ultimoQrCode = qr;
-
-  atualizarEstadoWhatsApp("QR_CODE", false);
-
-  console.log("👉 QR Code gerado.");
-
-  logEstado("QR");
-});
-
-client.on("loading_screen", (percent, message) => {
-
-  if (!whatsappReady) {
-    atualizarEstadoWhatsApp(`LOADING ${percent}%`, false);
-  } else {
-    console.log("🟢 LOADING ignorado porque o WhatsApp já está conectado.");
-  }
-
-  if (percent === 100) {
-    ultimoQrCode = null;
-  }
-
-  console.log(`📱 ${percent}% - ${message}`);
-  console.log("Mensagem:", message);
-
-  logEstado("LOADING");
-});
-
-client.on("authenticated", async () => {
-
-  atualizarEstadoWhatsApp("AUTHENTICATED");
-
-  console.log("🔐 WhatsApp autenticado");
-
-  try {
-
-    console.log("📱 Client info:", client.info);
-
-  } catch (err) {
-
-    console.log("Client info indisponível.");
-
-  }
-
-  try {
-
-    console.log("🌐 Web Version:", await client.getWWebVersion());
-
-  } catch (err) {
-
-    console.log("🌐 Web Version indisponível.");
-
-  }
-
-  logEstado("AUTHENTICATED");
-
-});
-
-client.on("change_state", async (state) => {
-
-  atualizarEstadoWhatsApp(state, state === "CONNECTED");
-
-  console.log("🔄 Estado:", state);
-
-  try {
-
-    console.log("📡 getState():", await client.getState());
-
-  } catch (err) {
-
-    console.log("❌ getState:", err.message);
-
-  }
-
-  logEstado("CHANGE_STATE");
-
-});
-
-client.on("ready", async () => {
-
-  console.log("🟢 ENTROU NO READY");
-
-  atualizarEstadoWhatsApp("CONNECTED", true);
-
-  ultimoQrCode = null;
-
-  console.log("✅ WhatsApp conectado.");
-
-  console.log("📱 Informações do cliente:");
-  console.log(client.info);
-
-  const browser = client.pupBrowser;
-  const page = client.pupPage;
-
-  try {
-
-    if (browser) {
-
-      console.log("🟢 Antes do browser.pages()");
-
-      const pages = await browser.pages();
-
-      console.log("🟢 Depois do browser.pages()");
-
-      console.log("\n======= ABAS DO CHROMIUM =======");
-
-      console.log("🟢 Antes do for");
-
-      for (const p of pages) {
-
-        try {
-
-          console.log(await p.title(), "->", p.url());
-
-        } catch (e) {
-
-          console.log("❌ Erro ao obter aba:", e.message);
-
-        }
-
-      }
-
-      console.log("================================\n");
-
-    } else {
-
-      console.log("❌ Browser é undefined.");
-
-    }
-
-  } catch (err) {
-
-    console.log("❌ Erro ao listar páginas:", err);
-
-  }
-
-  console.log("🌐 Browser disponível:", !!browser);
-  console.log("📄 Page disponível:", !!page);
-
-  console.log("🔍 Monitorando Puppeteer...");
-
-  if (browser) {
-
-    browser.on("disconnected", () => {
-
-      console.log("💥 Chromium desconectado!");
-
-    });
-
-  }
-
-  if (page) {
-
-    page.on("close", () => {
-
-      console.log("📄 Página do WhatsApp foi fechada!");
-
-    });
-
-    page.on("error", (err) => {
-
-      console.log("❌ Page Error:", err.message);
-
-    });
-
-    page.on("pageerror", (err) => {
-
-      console.log("❌ JS Error:", err.message);
-
-    });
-
-  }
-
-  try {
-
-    console.log("📡 getState():", await client.getState());
-
-  } catch (err) {
-
-    console.log("❌ getState():", err.message);
-
-  }
-
-  logEstado("READY");
-
-});
-
-client.on("message", (msg) => {
-  console.log("📩 Mensagem recebida:", msg.body);
-});
-
-client.on("remote_session_saved", () => {
-
-  atualizarEstadoWhatsApp("SESSION_SAVED");
-
-  console.log("💾 Sessão salva.");
-
-  logEstado("REMOTE_SESSION_SAVED");
-
-});
-
-client.on("disconnected", async (reason) => {
-
-  atualizarEstadoWhatsApp("DISCONNECTED", false);
-
-  console.log("🔌 WhatsApp desconectado.");
-
-  console.log("Motivo:", reason);
-
-  try {
-
-    console.log("📡 getState():", await client.getState());
-
-  } catch (err) {
-
-    console.log("❌ getState:", err.message);
-
-  }
-
-  logEstado("DISCONNECTED");
-
-});
-
-client.on("auth_failure", (msg) => {
-
-  atualizarEstadoWhatsApp("AUTH_FAILURE", false);
-
-  console.error("❌ Falha na autenticação:");
-
-  console.error(msg);
-
-  logEstado("AUTH_FAILURE");
-
-});
 
 async function criarAdminSeNaoExistir() {
   try {
@@ -392,127 +100,20 @@ async function iniciarSistema() {
   await criarAdminSeNaoExistir();
 
   app.listen(PORT, async () => {
-
     console.log(`🚀 Servidor rodando na porta ${PORT}`);
     console.log("⏳ Inicializando WhatsApp...");
 
     try {
+      await whatsapp.iniciarWhatsApp();
 
-      console.log("🚨 TESTE ÚNICO 12345");
-      console.log("🚀 ANTES DO INITIALIZE");
+      console.log("✅ Baileys iniciado.");
+      console.log("⏳ Aguardando conexão do WhatsApp...");
 
-      await client.initialize();
-
-      console.log("✅ DEPOIS DO INITIALIZE");
-      console.log("⏳ Aguardando autenticação...");
-      /*
-            const eventos = [
-              "qr",
-              "authenticated",
-              "auth_failure",
-              "loading_screen",
-              "ready",
-              "change_state",
-              "remote_session_saved",
-              "disconnected"
-            ];
-      
-            for (const evento of eventos) {
-      
-              client.on(evento, (...args) => {
-      
-                console.log(`📢 EVENTO DISPARADO: ${evento}`);
-      
-                if (args.length) {
-                  console.log("📦 Argumentos:", args);
-                }
-      
-              });
-      
-            }
-      
-            console.log("🚨 TESTE ÚNICO 12345");
-      */
-
-      // Estado do WhatsApp
-      setInterval(async () => {
-
-        try {
-
-          const state = await client.getState();
-
-          console.log("📡 Estado REAL:", state);
-
-          if (state === "CONNECTED" && !whatsappReady) {
-
-            console.log("🟢 Atualizando estado pelo getState()");
-
-            atualizarEstadoWhatsApp("CONNECTED", true);
-
-            ultimoQrCode = null;
-
-          }
-
-        } catch (err) {
-
-          console.log("📡 getState() ERRO:", err.message);
-
-        }
-
-      }, 5000);
-
-      // Memória
-      setInterval(() => {
-
-        const mem = process.memoryUsage();
-        const heap = v8.getHeapStatistics();
-
-        console.log(
-          `🧠 RSS: ${(mem.rss / 1024 / 1024).toFixed(1)} MB | ` +
-          `Heap: ${(mem.heapUsed / 1024 / 1024).toFixed(1)} MB | ` +
-          `Heap Limit: ${(heap.heap_size_limit / 1024 / 1024).toFixed(1)} MB | ` +
-          `External: ${(mem.external / 1024 / 1024).toFixed(1)} MB`
-        );
-
-      }, 5000);
-
-      // Processos do Linux
-      setInterval(() => {
-
-        exec(
-          "ps -eo pid,rss,comm | grep -E 'chrome|node' | grep -v grep",
-          (err, stdout) => {
-
-            if (err) return;
-
-            console.log("\n====== MEMÓRIA DOS PROCESSOS ======");
-
-            stdout
-              .trim()
-              .split("\n")
-              .forEach((linha) => {
-
-                const partes = linha.trim().split(/\s+/);
-
-                const pid = partes[0];
-                const rssKB = Number(partes[1]);
-                const comando = partes[2];
-
-                console.log(
-                  `${comando} (PID ${pid}) -> ${(rssKB / 1024).toFixed(1)} MB`
-                );
-
-              });
-
-            console.log("===================================\n");
-
-          }
-        );
-      }, 15000);
-
-      console.log("🔍 Monitoramento iniciado.");
     } catch (erro) {
-      console.error("❌ Erro ao inicializar o WhatsApp:", erro);
+      console.error(
+        "❌ Erro ao inicializar o WhatsApp:",
+        erro
+      );
     }
   });
 }
@@ -520,13 +121,10 @@ async function iniciarSistema() {
 const START = Date.now();
 
 async function enviarMensagem(numero, mensagem) {
-
-  if (!whatsappReady) {
-    throw new Error("WhatsApp indisponível.");
-  }
-
-  return await client.sendMessage(numero, mensagem);
-
+  return await whatsapp.enviarMensagem(
+    numero,
+    mensagem
+  );
 }
 
 iniciarSistema();
@@ -724,35 +322,71 @@ app.get("/admin/dashboard", verificarLogin, async (req, res) => {
 
 // ROTA PARA EXIBIR O QR CODE NA TELA DO NAVEGADOR
 app.get("/admin/qrcode", verificarLogin, (req, res) => {
+
   if (req.session.usuario !== "admin") {
     return res.status(403).send("Acesso negado.");
   }
 
-  if (!ultimoQrCode) {
-    return res.send("<h1>🎉 WhatsApp já está conectado ou o código ainda não foi gerado!</h1>");
+  const status = whatsapp.obterStatus();
+
+  if (!status.qrCode) {
+    return res.send(
+      "<h1>🎉 WhatsApp já está conectado ou o código ainda não foi gerado!</h1>"
+    );
   }
 
-  QRCodeDisplay.toDataURL(ultimoQrCode, (err, url) => {
-    if (err) return res.status(500).send("Erro ao gerar imagem do QR Code");
-    res.send(`
-      <div style="text-align: center; margin-top: 50px; font-family: sans-serif;">
-        <h2>📲 Escaneie o QR Code para ativar o Gerenciador de Boletos</h2>
-        <img src="${url}" style="width: 300px; border: 1px solid #ccc; padding: 10px; border-radius: 8px;" />
-        <p>Após escanear, atualize esta página para ver o status.</p>
-      </div>
-    `);
-  });
+  QRCodeDisplay.toDataURL(
+    status.qrCode,
+    (err, url) => {
+
+      if (err) {
+        return res
+          .status(500)
+          .send("Erro ao gerar imagem do QR Code");
+      }
+
+      res.send(`
+        <div style="text-align: center; margin-top: 50px; font-family: sans-serif;">
+          <h2>📲 Escaneie o QR Code para ativar o Gerenciador de Boletos</h2>
+
+          <img
+            src="${url}"
+            style="
+              width: 300px;
+              border: 1px solid #ccc;
+              padding: 10px;
+              border-radius: 8px;
+            "
+          />
+
+          <p>
+            Após escanear, atualize esta página para ver o status.
+          </p>
+        </div>
+      `);
+    }
+  );
 });
 
 app.get("/admin/whatsapp-status", async (req, res) => {
+  try {
+    const status = whatsapp.obterStatus();
 
-  res.json({
+    res.json(status);
 
-    conectado: whatsappReady,
-    estado: whatsappState,
-    temQrCode: !!ultimoQrCode
+  } catch (erro) {
 
-  });
+    console.error(
+      "❌ Erro ao obter status do WhatsApp:",
+      erro
+    );
+
+    res.status(500).json({
+      conectado: false,
+      estado: "ERROR",
+      temQrCode: false
+    });
+  }
 });
 
 app.get("/boletos", verificarLogin, async (req, res) => {
@@ -777,16 +411,9 @@ app.get("/boletos", verificarLogin, async (req, res) => {
 
 //rota temporária de teste
 app.get("/teste-whatsapp", async (req, res) => {
-  console.log("Estado:", whatsappState);
-  console.log("Ready:", whatsappReady);
 
   try {
-
-    if (!whatsappReady) {
-      return res.send("WhatsApp ainda não está pronto.");
-    }
-
-    const numero = "558988039351@c.us";
+    const numero = "558988039351";
 
     await enviarMensagem(
       numero,
@@ -796,10 +423,11 @@ app.get("/teste-whatsapp", async (req, res) => {
     res.send("Mensagem enviada!");
 
   } catch (erro) {
-
     console.error(erro);
 
-    res.status(500).send(erro.message);
+    res.status(500).send(
+      erro.message
+    );
   }
 });
 
@@ -945,7 +573,9 @@ cron.schedule(
 async function verificarEEnviarNotificacoes() {
   console.log("⏰ Iniciando checagem diária de boletos para o WhatsApp...");
 
-  if (!whatsappReady) {
+  const statusWhatsApp = whatsapp.obterStatus();
+
+  if (!statusWhatsApp.conectado) {
     console.log("⚠️ WhatsApp indisponível.");
     return;
   }
@@ -1030,58 +660,27 @@ async function verificarEEnviarNotificacoes() {
             `🔍 Pesquisando número no WhatsApp: ${numeroLimpo}`
           );
 
-          console.log("📱 Tentando validar número no WhatsApp...");
+          console.log(
+            `📤 Enviando notificação para ${numeroLimpo}...`
+          );
 
-          let idCadastrado =
-            await client.getNumberId(numeroLimpo);
+          await whatsapp.enviarMensagem(
+            numeroLimpo,
+            mensagem
+          );
 
-          console.log("📱 Resultado:", idCadastrado);
-
-          if (
-            !idCadastrado &&
-            numeroLimpo.length === 13
-          ) {
-
-            const ddiEDdd = numeroLimpo.substring(0, 4);
-            const restoDoNumero = numeroLimpo.substring(5);
-            const numeroSemNono =
-              ddiEDdd + restoDoNumero;
-
-            console.log(
-              `⚠️ Falhou com o 9. Tentando sem o 9º dígito: ${numeroSemNono}`
-            );
-
-            idCadastrado =
-              await client.getNumberId(numeroSemNono);
-          }
-
-          if (idCadastrado) {
-
-            await enviarMensagem(
-              idCadastrado._serialized,
-              mensagem
-            );
-
-            await db.query(
-              `
+          await db.query(
+            `
             UPDATE boletos
             SET notificacao_enviada = 1
             WHERE id = $1
             `,
-              [boleto.id]
-            );
+            [boleto.id]
+          );
 
-            console.log(
-              `📨 ✅ Notificação enviada com sucesso para ${boleto.telefone}`
-            );
-
-          } else {
-
-            console.error(
-              `❌ O número ${boleto.telefone} não pôde ser validado no WhatsApp.`
-            );
-
-          }
+          console.log(
+            `📨 ✅ Notificação enviada com sucesso para ${boleto.telefone}`
+          );
 
         } catch (whatsappError) {
 

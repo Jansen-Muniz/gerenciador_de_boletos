@@ -1,4 +1,7 @@
-# WhatsApp Web.js (Tokens e Sessão)
+# Sessão do WhatsApp - Baileys
+baileys_auth/
+
+# WhatsApp Web.js - arquivos antigos
 .wwebjs_auth/
 .wwebjs_cache/
 
