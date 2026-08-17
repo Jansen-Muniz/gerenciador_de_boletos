@@ -292,12 +292,21 @@ function limparCampos() {
 
 function formatarData(data) {
 
-  const dataSemHora = data.split("T")[0];
+  if (!data) return "";
 
-  const [ano, mes, dia] = dataSemHora.split("-");
+  const dataString = String(data);
+
+  const dataSemHora = dataString.split("T")[0];
+
+  const partes = dataSemHora.split("-");
+
+  if (partes.length !== 3) {
+    return dataString;
+  }
+
+  const [ano, mes, dia] = partes;
 
   return `${dia}/${mes}/${ano}`;
-
 }
 
 function formatarMoeda(e) {
@@ -348,11 +357,13 @@ function verificarVencimentos() {
 
     pendentes++;
 
-    if (boleto.vencimento === hojeFormatado) {
+    const vencimentoFormatado = boleto.vencimento.split("T")[0];
+
+    if (vencimentoFormatado === hojeFormatado) {
       vencendoHoje++;
     }
 
-    if (boleto.vencimento < hojeFormatado) {
+    if (vencimentoFormatado < hojeFormatado) {
       atrasados++;
     }
 

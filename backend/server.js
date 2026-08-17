@@ -472,7 +472,17 @@ app.put("/boletos/:id", verificarLogin, async (req, res) => {
     const { id } = req.params;
     const { nome, valor, vencimento, pago } = req.body;
     const usuarioLogado = req.session.usuario;
-    const notificacaoStatus = pago ? 1 : 0;
+    const resultadoAtual = await db.query(
+      "SELECT pago, notificacao_enviada FROM boletos WHERE id = $1 AND usuario = $2",
+      [id, usuarioLogado]
+    );
+
+    const boletoAtual = resultadoAtual.rows[0];
+
+    const notificacaoStatus =
+      boletoAtual.pago === 1 && !pago
+        ? 0
+        : boletoAtual.notificacao_enviada;
 
     await db.query(
       `
@@ -568,6 +578,25 @@ cron.schedule(
     timezone: "America/Sao_Paulo"
   }
 );
+
+// Rota para teste manual das notificações
+app.get("/teste-notificacoes", async (req, res) => {
+
+  try {
+
+    await verificarEEnviarNotificacoes();
+
+    res.send("Rotina de notificações executada!");
+
+  } catch (erro) {
+
+    console.error(erro);
+
+    res.status(500).send(
+      erro.message
+    );
+  }
+});
 
 // Função que faz a busca de datas e dispara as mensagens
 async function verificarEEnviarNotificacoes() {
