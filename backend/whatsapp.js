@@ -1,10 +1,3 @@
-const makeWASocket = require("@whiskeysockets/baileys").default;
-
-const {
-  useMultiFileAuthState,
-  DisconnectReason
-} = require("@whiskeysockets/baileys");
-
 const qrcode = require("qrcode-terminal");
 const path = require("path");
 
@@ -21,6 +14,12 @@ function atualizarEstado(estado, pronto = false) {
 }
 
 async function conectarWhatsApp() {
+
+  const {
+    default: makeWASocket,
+    useMultiFileAuthState,
+    DisconnectReason
+  } = await import("@whiskeysockets/baileys");
 
   const { state, saveCreds } =
     await useMultiFileAuthState(AUTH_FOLDER);
