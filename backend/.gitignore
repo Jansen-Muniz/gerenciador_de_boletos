@@ -11,5 +11,8 @@ baileys_auth/
 # Módulos do Node
 node_modules/
 
+# Backup da sessão do WhatsApp
+baileys_auth_backup/
+
 # Variáveis de ambiente
 .env
